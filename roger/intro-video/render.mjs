@@ -7,10 +7,11 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import C from './cues.js';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
-const W = 1920, H = 1080, FPS = 60, DUR = 15;
+const W = 1920, H = 1080, FPS = C.FPS, DUR = C.DUR;
 const argv = process.argv.slice(2);
 const mode = argv[0];
 const opt = (name, def) => { const i = argv.indexOf('--' + name); return i >= 0 ? argv[i + 1] : def; };

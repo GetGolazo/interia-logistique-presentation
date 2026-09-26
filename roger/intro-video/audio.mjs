@@ -412,7 +412,7 @@ function master(drive, ceiling) {
 let peak = 0;
 for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
 const pre = 0.9 / peak;
-for (let i = 0; i < N; i++) { L[i] *= pre * 1.2; R[i] *= pre * 1.2; }
+for (let i = 0; i < N; i++) { L[i] *= pre * 1.36; R[i] *= pre * 1.36; }
 const [oL, oR] = master(1.05, 0.8);
 
 // WAV 24 bits.

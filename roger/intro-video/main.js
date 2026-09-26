@@ -156,6 +156,7 @@
   // ---------------------------------------------------------------- HUD & caméra
   function buildHUD() {
     const tc = $('#hud-tr'), sec = $('#hud-bl');
+    $('#hud-br').textContent = `${C.BPM} BPM · ${C.FPS} i/s`;
     const SECTIONS = [[0, '01 — Le problème'], [C.chaos, '02 — Le chaos'], [C.drop, '03 — La réponse'],
       [C.sc4, '04 — La méthode'], [C.sc5, '05 — La promesse'], [C.sc6, '06 — Roger']];
     let lastTc = '', lastSec = '';
@@ -844,7 +845,7 @@
     const mw = mono.getBoundingClientRect().width;
     Object.assign(mono.style, { left: 960 - mw / 2 + 'px', top: '724px' });
     mono.textContent = '';
-    scramble(mono, monoTxt, C.mono2, 0.7, 91);
+    scramble(mono, monoTxt, C.mono2, 0.55, 91);
 
     // Double « bip » du point : un clin d'œil au « Roger beep » des radios.
     [0, C.beepGap].forEach((dt, i) => {

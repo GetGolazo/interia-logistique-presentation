@@ -1,6 +1,6 @@
-# ROGER — film d'introduction (15 s)
+# ROGER — film d'introduction (20 s)
 
-Film de motion design de 15 secondes présentant ROGER, avec image et son **entièrement générés par code**.
+Film de motion design de 20 secondes présentant ROGER, avec image et son **entièrement générés par code**.
 Format : 1920 × 1080, 60 images/s, flou de bouger (obturateur à 180°), son stéréo 48 kHz.
 
 ![Planche : une image toutes les 0,5 s](storyboard.jpg)
@@ -9,16 +9,16 @@ Format : 1920 × 1080, 60 images/s, flou de bouger (obturateur à 180°), son st
 > **propositions** : la charte de ROGER n'est pas encore validée. Les écrans d'interface sont illustratifs,
 > ce ne sont pas des captures de l'application réelle.
 
-## Déroulé (128 BPM, 8 mesures = 15,000 s)
+## Déroulé (96 BPM, 8 mesures = 20,000 s)
 
 | Temps | Séquence | Ce qu'on voit |
 |---|---|---|
-| 0,0 – 1,9 s | 01 · Le problème | Une goutte tombe sur sa cible ; « Une fuite. / Une serrure. / Une panne. » (morphing de l'icône) |
-| 1,9 – 3,8 s | 02 · Le chaos | Avalanche de notifications (appels, e-mails, messages), « Qui valide ? / Qui intervient ? », tout est aspiré dans une seule réponse : « Bien reçu. » |
-| 3,8 – 5,6 s | 03 · La réponse | Explosion bleue, logotype R⊙GER, signature ; plongée dans le « O » |
-| 5,6 – 11,3 s | 04 · La méthode | Travelling sur 4 étapes : Signaler · Qualifier · Intervenir · Suivre |
-| 11,3 – 13,1 s | 05 · La promesse | « Moins d'appels. Plus de suivi. » : le compteur redescend à 0, l'anneau se remplit |
-| 13,1 – 15,0 s | 06 · Roger | L'anneau devient le « O » du logo final ; double bip du point (clin d'œil au « Roger beep » des radios) |
+| 0 – 2,5 s | 01 · Le problème | Une goutte tombe sur sa cible ; « Une fuite. / Une serrure. / Une panne. » (morphing de l'icône) |
+| 2,5 – 5 s | 02 · Le chaos | Avalanche de notifications (appels, e-mails, messages), « Qui valide ? / Qui intervient ? », tout est aspiré dans une seule réponse : « Bien reçu. » |
+| 5 – 7,5 s | 03 · La réponse | Explosion bleue, logotype R⊙GER, signature ; plongée dans le « O » |
+| 7,5 – 15 s | 04 · La méthode | Travelling sur 4 étapes : Signaler · Qualifier · Intervenir · Suivre |
+| 15 – 17,5 s | 05 · La promesse | « Moins d'appels. Plus de suivi. » : le compteur redescend à 0, l'anneau se remplit |
+| 17,5 – 20 s | 06 · Roger | L'anneau devient le « O » du logo final ; double bip du point (clin d'œil au « Roger beep » des radios) |
 
 ## Fichiers
 
@@ -36,7 +36,7 @@ Prérequis : Node 18+, `ffmpeg` avec `libx264` dans le `PATH`.
 npm install
 npx playwright install chromium   # si Chromium n'est pas déjà installé
 npm run fonts          # Bricolage Grotesque, Inter, JetBrains Mono (Google Fonts, licence OFL)
-npm run render         # → out/roger_intro.mp4 (3 à 5 min sur 4 cœurs)
+npm run render         # → out/roger_intro.mp4 (4 à 7 min sur 4 cœurs)
 ```
 
 Autres commandes :
@@ -47,4 +47,6 @@ npm run audio && npm run preview       # puis ouvrir http://localhost:8080/index
 ```
 
 Pour changer un texte, une couleur ou un timing : `main.js` (textes, couleurs en tête de fichier) et `cues.js` (instants).
+Le rythme général se règle avec `BPM` et `DUR` dans `cues.js` : les animations gardent leur durée, seuls les temps de lecture changent
+(une première version à 128 BPM durait 15 s).
 L'image et le son restent synchronisés tant qu'on modifie les instants dans `cues.js`.
