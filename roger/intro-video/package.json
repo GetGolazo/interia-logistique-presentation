@@ -2,12 +2,13 @@
   "name": "roger-intro-video",
   "private": true,
   "version": "1.0.0",
-  "description": "ROGER — film d'introduction de 15 s (motion design et bande-son générés par code)",
+  "description": "ROGER — film d'introduction de 20 s en 16:9 et 9:16 (motion design et bande-son générés par code)",
   "scripts": {
     "fonts": "bash fonts.sh",
     "audio": "node audio.mjs",
     "stills": "node render.mjs stills",
     "render": "node audio.mjs && node render.mjs video --samples 8 --workers 4 --crf 15 --audio out/audio.wav --out out/roger_intro.mp4",
+    "render:9x16": "node audio.mjs && node render.mjs video --format 9x16 --samples 8 --workers 4 --crf 15 --audio out/audio.wav --out out/roger_intro_9x16.mp4",
     "preview": "npx http-server -p 8080 -c-1 ."
   },
   "dependencies": {

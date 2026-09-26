@@ -10,19 +10,21 @@
   --coral: #FF5A3C;
   --green: #1FB86B;
   --hud: #0B0D12;
+  --W: 1920px;
+  --H: 1080px;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #000; }
 
 #stage {
-  position: relative; width: 1920px; height: 1080px; overflow: hidden;
+  position: relative; width: var(--W); height: var(--H); overflow: hidden;
   background: var(--cream);
   font-family: Inter, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
 }
-.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.layer { position: absolute; left: 0; top: 0; width: var(--W); height: var(--H); }
 .scene { visibility: hidden; }
 .abs { position: absolute; }
 .ch { display: inline-block; white-space: pre; }
@@ -44,7 +46,7 @@ html, body { margin: 0; background: #000; }
 #c4 { right: 30px; bottom: 30px; border-width: 0 1.5px 1.5px 0; }
 
 /* ---------- 01 ---------- */
-.s1line { left: 700px; top: 452px; height: 186px; font-size: 150px; line-height: 186px; color: var(--ink); letter-spacing: -.025em; }
+.s1line { color: var(--ink); letter-spacing: -.025em; }
 .cap { font: 500 20px/1 JBM; letter-spacing: .2em; color: rgba(11, 13, 18, .55); white-space: pre; }
 .xhair-l { font: 500 13px/1 JBM; letter-spacing: .12em; color: rgba(11, 13, 18, .45); white-space: nowrap; }
 
@@ -62,9 +64,9 @@ html, body { margin: 0; background: #000; }
 .card .meta b { font-weight: 700; color: #1C1F26; }
 .card .body { font: 600 23px/1.25 Inter; color: var(--ink); margin-top: 5px; letter-spacing: -.01em; }
 .card .cnt { position: absolute; top: -13px; right: -13px; min-width: 36px; height: 36px; padding: 0 9px; border-radius: 18px; background: #FF3B30; color: #fff; font: 800 19px/36px Inter; text-align: center; box-shadow: 0 6px 14px rgba(0, 0, 0, .35); }
-.qline { top: 445px; height: 190px; font-size: 148px; line-height: 190px; color: var(--ink); letter-spacing: -.025em; }
+.qline { color: var(--ink); letter-spacing: -.025em; }
 .bubble {
-  left: 960px; top: 540px; width: 500px; height: 136px; background: var(--blue); color: var(--cream);
+  width: 500px; height: 136px; background: var(--blue); color: var(--cream);
   border-radius: 68px 68px 68px 18px; display: grid; place-items: center;
   box-shadow: 0 40px 90px -24px rgba(47, 75, 255, .75);
 }
@@ -83,7 +85,7 @@ html, body { margin: 0; background: #000; }
 .st-num i { display: inline-block; width: 12px; height: 12px; background: var(--blue); margin-right: 14px; vertical-align: -1px; border-radius: 3px; }
 .st-title { color: var(--ink); letter-spacing: -.03em; }
 .st-desc { font: 500 38px/52px Inter; color: rgba(11, 13, 18, .72); letter-spacing: -.015em; height: 56px; }
-.ill { width: 700px; height: 640px; }
+.ill { width: 700px; height: 640px; transform-origin: 50% 50%; }
 .panel { background: #fff; border-radius: 36px; box-shadow: 0 50px 90px -40px rgba(11, 13, 18, .45), 0 0 0 1px rgba(11, 13, 18, .05); }
 .sticker-cap { font: 700 24px/1 Inter; color: var(--ink); text-align: center; letter-spacing: -.01em; }
 .photo { width: 164px; height: 164px; padding: 9px; background: #fff; border-radius: 22px; box-shadow: 0 26px 50px -20px rgba(11, 13, 18, .5); }
@@ -98,5 +100,15 @@ html, body { margin: 0; background: #000; }
 .prog-l { font: 600 15px/1 JBM; letter-spacing: .16em; color: rgba(11, 13, 18, .38); white-space: nowrap; text-transform: uppercase; }
 
 /* ---------- 05 ---------- */
-.s5line { left: 150px; height: 206px; font-size: 172px; line-height: 206px; color: var(--cream); letter-spacing: -.03em; }
+.s5line { height: 206px; font-size: 172px; line-height: 206px; color: var(--cream); letter-spacing: -.03em; }
 .cnt5 { width: 84px; height: 84px; border-radius: 42px; background: var(--coral); color: #fff; font: 800 38px/84px Inter; text-align: center; letter-spacing: -.02em; }
+
+/* ---------- 9:16 : textes un peu plus grands pour la lecture sur téléphone ---------- */
+.v .hud-t { font-size: 19px; }
+.v #hud-tl, .v #hud-tr { top: 58px; }
+.v #hud-bl, .v #hud-br { bottom: 58px; }
+.v .st-num { font-size: 22px; }
+.v .st-desc { font-size: 42px; line-height: 58px; height: 62px; }
+.v .prog-l { font-size: 18px; }
+.v .mono { font-size: 24px; }
+.v .s5line { height: 196px; font-size: 166px; line-height: 196px; }

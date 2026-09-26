@@ -1,10 +1,56 @@
-/* ROGER — film d'introduction (15 s, 1920×1080, 60 i/s).
+/* ROGER — film d'introduction (20 s, 60 i/s), en 16:9 (1920×1080) ou en 9:16 (1080×1920 : index.html?format=9x16).
    Une timeline GSAP en pause + des effets procéduraux : window.seek(t) rend l'image exacte à l'instant t. */
 (function () {
   'use strict';
   const C = window.CUES;
   const b = C.b;
   gsap.registerPlugin(MorphSVGPlugin, DrawSVGPlugin);
+
+  // Format : 16:9 par défaut, 9:16 avec ?format=9x16 (même animation, mise en page recomposée).
+  const V = new URLSearchParams(location.search).get('format') === '9x16';
+  const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+  const CX = W / 2, CY = H / 2;
+  document.documentElement.style.setProperty('--W', W + 'px');
+  document.documentElement.style.setProperty('--H', H + 'px');
+  if (V) document.documentElement.classList.add('v');
+
+  // Mises en page. Le 16:9 reprend les valeurs d'origine ; le 9:16 empile les éléments
+  // et garde les textes dans la zone lisible des formats verticaux (Reels, TikTok, Shorts).
+  const LAND = {
+    P: { x: 560, y: 540 }, badge: 190, guideTop: 120, fallY0: 70,
+    cap: { x: 704, y: 404, center: false },
+    s1: { x: 700, top: 452, size: 150, lh: 186, center: false },
+    marq: [30, 800],
+    cards: [[330, 170, -7], [1545, 150, 6], [945, 100, -3], [275, 470, 5], [1640, 430, -6], [385, 805, -4], [1500, 775, 7],
+      [960, 975, -2], [690, 320, 9], [1265, 315, -8], [610, 655, 4], [1325, 630, -5], [1665, 990, 3], [240, 1000, -6]],
+    q: { size: 148, pad: 58 },
+    wm3: { size: 330, ringY: 452 },
+    base3: { lines: ['Dépannage & maintenance des logements'], top: 668, size: 50, lh: 64 },
+    st: { numX: 166, numY: 312, titleX: 150, titleY: 344, titleMaxW: 860, descX: 162, illX: 1060, illY: 170, illScale: 1,
+      prog: { x: 160, y: 924, w: 1600 } },
+    s5: { x: 150, lines: [['Moins d’appels.', 268, 0, -1], ['Plus de suivi.', 486, 1, 8]], phone: [1650, 371], ring: [1650, 589] },
+    wm6: { size: 250, ringY: 452 },
+    base6: { lines: ['Dépannage & maintenance des logements'], top: 628, size: 50, lh: 64 },
+    mono6: { lines: ['POUR LES GESTIONNAIRES LOCATIFS · PARIS & ÎLE-DE-FRANCE'], top: 724, lh: 40 },
+  };
+  const VERT = {
+    P: { x: 540, y: 700 }, badge: 210, guideTop: 200, fallY0: 150,
+    cap: { x: 540, y: 872, center: true },
+    s1: { x: 540, top: 912, size: 138, lh: 172, center: true },
+    marq: [70, 1640],
+    cards: [[310, 210, -7], [780, 1560, 6], [540, 400, -3], [300, 1230, 5], [790, 620, -6], [330, 1470, -4], [770, 250, 7],
+      [560, 1700, -2], [280, 560, 9], [760, 1160, -8], [330, 780, 4], [620, 1360, -5], [760, 820, 3], [290, 1790, -6]],
+    q: { size: 0, pad: 44, maxW: 1000 },
+    wm3: { size: 270, ringY: 860 },
+    base3: { lines: ['Dépannage & maintenance', 'des logements'], top: 1030, size: 58, lh: 74 },
+    st: { numX: 92, numY: 250, titleX: 76, titleY: 282, titleMaxW: 900, descX: 88, illX: 190, illY: 680, illScale: 1.18,
+      prog: { x: 90, y: 1470, w: 900 } },
+    s5: { x: 80, lines: [['Moins', 460, 0, -1], ['d’appels.', 640, 0, -1], ['Plus de', 880, 1, -1], ['suivi.', 1060, 1, 0]], phone: [840, 560], ring: [840, 1160] },
+    wm6: { size: 230, ringY: 840 },
+    base6: { lines: ['Dépannage & maintenance', 'des logements'], top: 980, size: 54, lh: 70 },
+    mono6: { lines: ['POUR LES GESTIONNAIRES LOCATIFS', 'PARIS & ÎLE-DE-FRANCE'], top: 1140, lh: 46 },
+  };
+  const L = V ? VERT : LAND;
 
   const INK = '#0B0D12', CREAM = '#F2EEE6', BLUE = '#2F4BFF', YELLOW = '#FFD43B', CORAL = '#FF5A3C', GREEN = '#1FB86B';
   const tl = gsap.timeline({ paused: true, defaults: { immediateRender: false } });
@@ -143,6 +189,15 @@
     wrap.append(R1, box, G, E, R2);
     return { wrap, R1, G, E, R2, letters: [R1, G, E, R2], box, svg, ring, dot, cap, D, SW, DR, size };
   }
+  function baseLines(parent, cfg) {
+    return cfg.lines.map((txt, i) => {
+      const e = h('div', { class: 'abs mask brico base', style: { top: cfg.top + i * cfg.lh + 'px', fontSize: cfg.size + 'px', lineHeight: cfg.lh + 'px', height: cfg.lh + 'px' } });
+      e.textContent = txt; parent.append(e);
+      const ws = splitWords(e);
+      e.style.left = CX - e.getBoundingClientRect().width / 2 + 'px';
+      return { e, ws };
+    });
+  }
   function placeWordmark(WM, cx, ringCY) {
     const wr = WM.wrap.getBoundingClientRect(), rr = WM.svg.getBoundingClientRect();
     const offY = rr.top + rr.height / 2 - wr.top;
@@ -199,11 +254,11 @@
     const sc = $('#sc1');
     gsap.set(sc, { autoAlpha: 1 });
     sc.append(h('div', { class: 'layer', style: { background: CREAM } }));
-    const P = { x: 560, y: 540 };
+    const P = L.P, BR = L.badge / 2;
 
     // Mire de visée + guide pointillé (clin d'œil « making-of »).
-    const guide = s('svg', { width: 1920, height: 1080, class: 'layer' });
-    const gline = s('line', { x1: P.x, y1: 120, x2: P.x, y2: P.y - 34, stroke: INK, 'stroke-opacity': 0.22, 'stroke-width': 1.5, 'stroke-dasharray': '6 8' });
+    const guide = s('svg', { width: W, height: H, class: 'layer' });
+    const gline = s('line', { x1: P.x, y1: L.guideTop, x2: P.x, y2: P.y - 34, stroke: INK, 'stroke-opacity': 0.22, 'stroke-width': 1.5, 'stroke-dasharray': '6 8' });
     const xg = s('g', { stroke: INK, 'stroke-opacity': 0.5, 'stroke-width': 1.5, fill: 'none' });
     [[-34, 0, -14, 0], [14, 0, 34, 0], [0, -34, 0, -14], [0, 14, 0, 34]].forEach(([a, c, d, e]) =>
       xg.append(s('line', { x1: P.x + a, y1: P.y + c, x2: P.x + d, y2: P.y + e })));
@@ -211,37 +266,37 @@
     guide.append(gline, xg);
     sc.append(guide);
     const xl = h('div', { class: 'abs xhair-l', style: { left: P.x + 24 + 'px', top: P.y + 22 + 'px' } });
-    xl.textContent = 'X 560 · Y 540';
+    xl.textContent = `X ${P.x} · Y ${P.y}`;
     sc.append(xl);
     tl.fromTo(gline, { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.3, ease: 'power2.out' }, 0);
     tl.to([guide, xl], { autoAlpha: 0, duration: 0.12, ease: 'none' }, C.impact - 0.02);
 
     // Ondes de choc.
-    const rs = s('svg', { width: 1920, height: 1080, class: 'layer' });
+    const rs = s('svg', { width: W, height: H, class: 'layer' });
     rs.style.overflow = 'visible';
-    const mkRip = (col) => { const c = s('circle', { cx: P.x, cy: P.y, r: 95, fill: 'none', stroke: col, 'stroke-width': 6 }); rs.append(c); return c; };
+    const mkRip = (col) => { const c = s('circle', { cx: P.x, cy: P.y, r: BR, fill: 'none', stroke: col, 'stroke-width': 6 }); rs.append(c); return c; };
     const rips = [mkRip(BLUE), mkRip(BLUE), mkRip(BLUE)];
     const rip2 = mkRip(YELLOW), rip3 = mkRip(CORAL);
     sc.append(rs);
     gsap.set([...rips, rip2, rip3], { autoAlpha: 0 });
-    rips.forEach((c, i) => tl.fromTo(c, { attr: { r: 95, 'stroke-width': 7 }, autoAlpha: 0.9 },
+    rips.forEach((c, i) => tl.fromTo(c, { attr: { r: BR, 'stroke-width': 7 }, autoAlpha: 0.9 },
       { attr: { r: 320 + i * 110, 'stroke-width': 1 }, autoAlpha: 0, duration: 0.95 + i * 0.12, ease: 'power2.out' }, C.impact + i * 0.08));
-    [[rip2, C.swap2], [rip3, C.swap3]].forEach(([c, t0]) => tl.fromTo(c, { attr: { r: 95, 'stroke-width': 6 }, autoAlpha: 0.9 },
+    [[rip2, C.swap2], [rip3, C.swap3]].forEach(([c, t0]) => tl.fromTo(c, { attr: { r: BR, 'stroke-width': 6 }, autoAlpha: 0.9 },
       { attr: { r: 250, 'stroke-width': 1 }, autoAlpha: 0, duration: 0.6, ease: 'power2.out' }, t0));
 
     // La goutte qui tombe.
     const fall = h('div', { class: 'abs', style: { left: P.x - 40 + 'px', top: '0px', width: '80px', height: '104px' } });
     fall.innerHTML = `<svg viewBox="0 0 100 130" width="80" height="104" style="overflow:visible"><path d="M50 3 C50 3 12 52 12 84 C12 106 29 124 50 124 C71 124 88 106 88 84 C88 52 50 3 50 3 Z" fill="${BLUE}"/><ellipse cx="33" cy="88" rx="7" ry="13" fill="#fff" opacity=".35"/></svg>`;
     sc.append(fall);
-    gsap.set(fall, { y: 70, scale: 0.3, transformOrigin: '50% 0%' });
+    gsap.set(fall, { y: L.fallY0, scale: 0.3, transformOrigin: '50% 0%' });
     tl.fromTo(fall, { scale: 0.3 }, { scale: 1, duration: 0.13, ease: 'back.out(3)' }, 0);
-    tl.fromTo(fall, { y: 70 }, { y: P.y - 104 * 1.3, duration: C.impact - 0.12, ease: 'power3.in' }, 0.12);
+    tl.fromTo(fall, { y: L.fallY0 }, { y: P.y - 104 * 1.3, duration: C.impact - 0.12, ease: 'power3.in' }, 0.12);
     tl.fromTo(fall, { scaleX: 1, scaleY: 1 }, { scaleX: 0.8, scaleY: 1.3, duration: C.impact - 0.13, ease: 'power2.in' }, 0.13);
     tl.set(fall, { autoAlpha: 0 }, C.impact);
 
     // Pastille : goutte → serrure → éclair (morphing).
-    const badge = h('div', { class: 'abs', style: { left: P.x - 95 + 'px', top: P.y - 95 + 'px', width: '190px', height: '190px', borderRadius: '50%', background: BLUE } });
-    badge.innerHTML = `<svg viewBox="0 0 100 100" width="190" height="190"><path d="${ICO_DROP}" fill="${CREAM}"/></svg>`;
+    const badge = h('div', { class: 'abs', style: { left: P.x - BR + 'px', top: P.y - BR + 'px', width: L.badge + 'px', height: L.badge + 'px', borderRadius: '50%', background: BLUE } });
+    badge.innerHTML = `<svg viewBox="0 0 100 100" width="${L.badge}" height="${L.badge}"><path d="${ICO_DROP}" fill="${CREAM}"/></svg>`;
     sc.append(badge);
     const ico = badge.querySelector('path');
     gsap.set(badge, { scale: 0 });
@@ -256,18 +311,21 @@
     tl.fromTo(badge, { scale: 0.8, autoAlpha: 1 }, { scale: 2.4, autoAlpha: 0, duration: 0.3, ease: 'expo.out' }, C.chaos);
 
     // Horodatage.
-    const cap = h('div', { class: 'abs cap', style: { left: '704px', top: '404px' } });
+    const capTxt = 'LUNDI · 07:42 · PARIS';
+    const cap = h('div', { class: 'abs cap', style: { left: L.cap.x + 'px', top: L.cap.y + 'px' } });
     sc.append(cap);
-    scramble(cap, 'LUNDI · 07:42 · PARIS', C.capIn, 0.42, 17);
+    if (L.cap.center) { cap.textContent = capTxt; cap.style.left = L.cap.x - cap.getBoundingClientRect().width / 2 + 'px'; cap.textContent = ''; }
+    scramble(cap, capTxt, C.capIn, 0.42, 17);
 
     // Titres.
     const phrases = ['Une fuite.', 'Une serrure.', 'Une panne.'];
     const ins = [C.impact + 0.03, C.swap2 - 0.01, C.swap3 - 0.01];
     const outs = [C.swap2 - 0.1, C.swap3 - 0.1, C.chaos + 0.02];
     phrases.forEach((p, i) => {
-      const m = h('div', { class: 'abs mask brico s1line' });
+      const m = h('div', { class: 'abs mask brico s1line', style: { left: L.s1.x + 'px', top: L.s1.top + 'px', fontSize: L.s1.size + 'px', lineHeight: L.s1.lh + 'px', height: L.s1.lh + 'px' } });
       m.textContent = p; sc.append(m);
       const ch = splitChars(m);
+      if (L.s1.center) m.style.left = L.s1.x - m.getBoundingClientRect().width / 2 + 'px';
       gsap.set(ch, { yPercent: 112 });
       chars(ch, ins[i], outs[i], { dur: 0.45, stagger: 0.016, w0: 380 });
     });
@@ -297,7 +355,7 @@
   // ---------------------------------------------------------------- 02 — Le chaos
   function buildSC2() {
     const sc = $('#sc2');
-    const wipe = h('div', { class: 'abs', style: { left: 560 - 1650 + 'px', top: 540 - 1650 + 'px', width: '3300px', height: '3300px', borderRadius: '50%', background: INK } });
+    const wipe = h('div', { class: 'abs', style: { left: L.P.x - 1650 + 'px', top: L.P.y - 1650 + 'px', width: '3300px', height: '3300px', borderRadius: '50%', background: INK } });
     sc.append(wipe);
     gsap.set(wipe, { scale: 0 });
     tl.set(sc, { autoAlpha: 1 }, C.chaos - 0.001);
@@ -307,8 +365,8 @@
 
     // Bandeaux typographiques en fond.
     const marq = (txt, top) => { const m = h('div', { class: 'abs marq brico', style: { top: top + 'px', left: '0px' } }); m.textContent = txt.repeat(3); sc.append(m); return m; };
-    const m1 = marq('APPELS · E-MAILS · MESSAGES · RELANCES · ', 30);
-    const m2 = marq('QUI VALIDE ? · QUI PASSE ? · QUAND ? · ', 800);
+    const m1 = marq('APPELS · E-MAILS · MESSAGES · RELANCES · ', L.marq[0]);
+    const m2 = marq('QUI VALIDE ? · QUI PASSE ? · QUAND ? · ', L.marq[1]);
     gsap.set([m1, m2], { autoAlpha: 0 });
     tl.fromTo([m1, m2], { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'none' }, C.chaos + 0.08);
     tl.to([m1, m2], { autoAlpha: 0, duration: 0.25, ease: 'none' }, C.collapse);
@@ -335,6 +393,7 @@
       { k: 'mail', c: BLUE, meta: 'Syndic', time: '07:55', body: 'URGENT — dégât des eaux', x: 1665, y: 990, r: 3 },
       { k: 'chat', c: GREEN, meta: 'Propriétaire', time: '07:58', body: 'C’est réparé ?', x: 240, y: 1000, r: -6 },
     ];
+    CARDS.forEach((d, i) => { [d.x, d.y, d.r] = L.cards[i]; });
     const layer = h('div', { class: 'layer' }); sc.append(layer);
     const wraps = [], jits = [];
     CARDS.forEach((d) => {
@@ -353,7 +412,7 @@
       tl.fromTo(w, { scale: 0.35, rotation: d.r - 14, y: -34 }, { scale: 1, rotation: d.r, y: 0, duration: 0.36, ease: 'back.out(2.2)' }, t0);
       const delay = (i % 5) * 0.012;
       tl.fromTo(w, { x: 0, y: 0, scale: 1, rotation: d.r },
-        { x: 960 - d.x, y: 540 - d.y, scale: 0.1, rotation: d.r + (d.x < 960 ? 30 : -30), duration: 0.5, ease: 'power3.in' }, C.collapse + delay);
+        { x: CX - d.x, y: CY - d.y, scale: 0.1, rotation: d.r + (d.x < CX ? 30 : -30), duration: 0.5, ease: 'power3.in' }, C.collapse + delay);
       tl.to(w, { autoAlpha: 0, duration: 0.08, ease: 'none' }, C.collapse + delay + 0.43);
     });
     proc.push((t) => {
@@ -373,21 +432,29 @@
 
     // Les questions (bandeau corail).
     const qbox = h('div', { class: 'layer' });
-    const qbg = h('div', { class: 'abs', style: { background: CORAL, height: '214px', top: 540 - 107 + 'px', borderRadius: '8px' } });
+    const qbg = h('div', { class: 'abs', style: { background: CORAL, borderRadius: '8px' } });
     const q1 = h('div', { class: 'abs mask brico qline' }); q1.textContent = 'Qui valide ?';
     const q2 = h('div', { class: 'abs mask brico qline' }); q2.textContent = 'Qui intervient ?';
     qbox.append(qbg, q1, q2); sc.append(qbox);
+    const pad = L.q.pad;
+    let qs = L.q.size;
+    if (!qs) { // 9:16 : la taille s'adapte à la largeur disponible
+      q2.style.fontSize = '148px';
+      qs = Math.floor(148 * (L.q.maxW - 2 * pad) / q2.getBoundingClientRect().width);
+    }
+    const qlh = Math.round(qs * 190 / 148), qbh = Math.round(qs * 214 / 148);
+    [q1, q2].forEach((q) => Object.assign(q.style, { fontSize: qs + 'px', lineHeight: qlh + 'px', height: qlh + 'px', top: CY - qlh / 2 + 'px' }));
+    Object.assign(qbg.style, { height: qbh + 'px', top: CY - qbh / 2 + 'px' });
     const c1 = splitChars(q1), c2 = splitChars(q2);
     const w1 = q1.getBoundingClientRect().width, w2 = q2.getBoundingClientRect().width;
-    const pad = 58;
-    q1.style.left = 960 - w1 / 2 + 'px'; q2.style.left = 960 - w2 / 2 + 'px';
-    gsap.set(qbox, { rotation: -2, transformOrigin: '960px 540px' });
-    gsap.set(qbg, { left: 960 - w1 / 2 - pad, width: w1 + 2 * pad, scaleX: 0, transformOrigin: '0% 50%' });
+    q1.style.left = CX - w1 / 2 + 'px'; q2.style.left = CX - w2 / 2 + 'px';
+    gsap.set(qbox, { rotation: -2, transformOrigin: `${CX}px ${CY}px` });
+    gsap.set(qbg, { left: CX - w1 / 2 - pad, width: w1 + 2 * pad, scaleX: 0, transformOrigin: '0% 50%' });
     gsap.set([...c1, ...c2], { yPercent: 112 });
     tl.fromTo(qbg, { scaleX: 0 }, { scaleX: 1, duration: 0.28, ease: 'expo.out' }, C.q1 - 0.03);
     tl.fromTo(qbox, { scale: 1.12 }, { scale: 1, duration: 0.4, ease: 'expo.out' }, C.q1);
     chars(c1, C.q1, C.q2 - 0.12, { dur: 0.36, stagger: 0.01, w0: 500 }, { stagger: 0.006 });
-    tl.fromTo(qbg, { left: 960 - w1 / 2 - pad, width: w1 + 2 * pad }, { left: 960 - w2 / 2 - pad, width: w2 + 2 * pad, duration: 0.32, ease: 'expo.inOut' }, C.q2 - 0.14);
+    tl.fromTo(qbg, { left: CX - w1 / 2 - pad, width: w1 + 2 * pad }, { left: CX - w2 / 2 - pad, width: w2 + 2 * pad, duration: 0.32, ease: 'expo.inOut' }, C.q2 - 0.14);
     tl.fromTo(qbox, { scale: 1.1 }, { scale: 1, duration: 0.4, ease: 'expo.out' }, C.q2);
     chars(c2, C.q2, C.qOut - 0.1, { dur: 0.36, stagger: 0.01, w0: 500 }, { stagger: 0.006 });
     tl.set(qbg, { transformOrigin: '100% 50%' }, C.qOut - 0.051);
@@ -398,7 +465,7 @@
     tl.fromTo('#cam', { scale: 1.055, rotation: -1.2 }, { scale: 1, rotation: 0, duration: 0.7, ease: 'expo.inOut' }, C.collapse);
 
     // « Bien reçu. »
-    const bub = h('div', { class: 'abs bubble' });
+    const bub = h('div', { class: 'abs bubble', style: { left: CX + 'px', top: CY + 'px' } });
     bub.innerHTML = `<div class="btxt"><span>Bien reçu.</span><span class="ck">${icon('checks', 50, YELLOW, 2.6)}</span></div>`;
     sc.append(bub);
     const btxt = bub.querySelector('.btxt'), ckPaths = bub.querySelectorAll('.ck path');
@@ -412,10 +479,10 @@
   // ---------------------------------------------------------------- 03 — La réponse
   function buildSC3() {
     const sc = $('#sc3');
-    const wipe = h('div', { class: 'abs', style: { left: 960 - 1200 + 'px', top: 540 - 1200 + 'px', width: '2400px', height: '2400px', borderRadius: '50%', background: BLUE } });
-    const shock = s('svg', { width: 1920, height: 1080, class: 'layer' });
+    const wipe = h('div', { class: 'abs', style: { left: CX - 1200 + 'px', top: CY - 1200 + 'px', width: '2400px', height: '2400px', borderRadius: '50%', background: BLUE } });
+    const shock = s('svg', { width: W, height: H, class: 'layer' });
     shock.style.overflow = 'visible';
-    const sring = s('circle', { cx: 960, cy: 540, r: 280, fill: 'none', stroke: CREAM, 'stroke-width': 40 });
+    const sring = s('circle', { cx: CX, cy: CY, r: 280, fill: 'none', stroke: CREAM, 'stroke-width': 40 });
     shock.append(sring);
     sc.append(wipe, shock);
     gsap.set(wipe, { scale: 0.22 });
@@ -426,9 +493,9 @@
     tl.set('#sc2', { autoAlpha: 0 }, C.drop + 0.45);
     tl.set('#stage', { backgroundColor: BLUE }, C.drop + 0.45);
 
-    const WM = wordmark(330);
+    const WM = wordmark(L.wm3.size);
     sc.append(WM.wrap);
-    placeWordmark(WM, 960, 452);
+    placeWordmark(WM, CX, L.wm3.ringY);
     WM.wrap.style.overflow = 'hidden';
 
     // Lettres : montée + graisse 250 → 800 ; l'anneau se trace.
@@ -447,17 +514,13 @@
     tl.fromTo(WM.wrap, { scale: 0.955 }, { scale: 1, duration: C.zoomPrep - C.drop, ease: 'power1.out' }, C.drop);
 
     // Signature.
-    const base = h('div', { class: 'abs mask brico base' });
-    base.textContent = 'Dépannage & maintenance des logements';
-    sc.append(base);
-    const words = splitWords(base);
-    const bw = base.getBoundingClientRect().width;
-    Object.assign(base.style, { left: 960 - bw / 2 + 'px', top: '668px' });
+    const bases = baseLines(sc, L.base3);
+    const words = bases.flatMap((x) => x.ws);
     gsap.set(words, { yPercent: 110 });
     tl.fromTo(words, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, C.base1);
 
     // Plongée dans le « O ».
-    tl.to(base, { autoAlpha: 0, duration: 0.16, ease: 'none' }, C.zoomPrep);
+    tl.to(bases.map((x) => x.e), { autoAlpha: 0, duration: 0.16, ease: 'none' }, C.zoomPrep);
     const counterR = (WM.D - 2 * WM.SW) / 2 + 1;
     tl.fromTo(WM.dot, { scale: 1 }, { scale: counterR / WM.DR, duration: 0.3, ease: 'expo.inOut' }, C.zoomPrep);
     tl.to(WM.dot, { fill: CREAM, duration: 0.18, ease: 'none' }, C.zoomPrep + 0.06);
@@ -718,7 +781,7 @@
     sc.append(h('div', { class: 'layer', style: { background: CREAM } }));
     const grid = h('div', { class: 'layer grid' });
     sc.append(grid);
-    const track = h('div', { class: 'abs', style: { left: '0px', top: '0px', width: 1920 * 4 + 'px', height: '1080px' } });
+    const track = h('div', { class: 'abs', style: { left: '0px', top: '0px', width: W * 4 + 'px', height: H + 'px' } });
     sc.append(track);
     tl.set(sc, { autoAlpha: 1 }, C.sc4 - 0.001);
     tl.set('#sc3', { autoAlpha: 0 }, C.sc4);
@@ -731,19 +794,19 @@
       { t: 'Suivre', d: 'Un compte rendu clair.', ill: ill4 },
     ];
     const maxW = Math.max(...STEPS.map((st) => textWidth(st.t, briCSS(100)))) * 1.02;
-    const F = Math.min(176, Math.floor(100 * 860 / maxW));
+    const F = Math.min(176, Math.floor(100 * L.st.titleMaxW / maxW));
     const titles = [], ills = [];
     STEPS.forEach((st, i) => {
       const S = C.st[i];
-      const sec = h('div', { class: 'abs', style: { left: i * 1920 + 'px', top: '0px', width: '1920px', height: '1080px' } });
+      const sec = h('div', { class: 'abs', style: { left: i * W + 'px', top: '0px', width: W + 'px', height: H + 'px' } });
       track.append(sec);
-      const num = h('div', { class: 'abs st-num', style: { left: '166px', top: '312px' } });
+      const num = h('div', { class: 'abs st-num', style: { left: L.st.numX + 'px', top: L.st.numY + 'px' } });
       num.innerHTML = `<i></i>ÉTAPE 0${i + 1} / 04`;
-      const title = h('div', { class: 'abs mask brico st-title', style: { left: '150px', top: '344px', fontSize: F + 'px', lineHeight: Math.round(F * 1.2) + 'px', height: Math.round(F * 1.2) + 'px' } });
+      const title = h('div', { class: 'abs mask brico st-title', style: { left: L.st.titleX + 'px', top: L.st.titleY + 'px', fontSize: F + 'px', lineHeight: Math.round(F * 1.2) + 'px', height: Math.round(F * 1.2) + 'px' } });
       title.textContent = st.t;
-      const desc = h('div', { class: 'abs mask st-desc', style: { left: '162px', top: 344 + Math.round(F * 1.2) + 12 + 'px' } });
+      const desc = h('div', { class: 'abs mask st-desc', style: { left: L.st.descX + 'px', top: L.st.titleY + Math.round(F * 1.2) + 12 + 'px' } });
       desc.textContent = st.d;
-      const ill = h('div', { class: 'abs ill', style: { left: '1060px', top: '170px' } });
+      const ill = h('div', { class: 'abs ill', style: { left: L.st.illX + 'px', top: L.st.illY + 'px' } });
       sec.append(num, title, desc, ill);
       titles.push(title); ills.push(ill);
       const tc = splitChars(title);
@@ -758,7 +821,8 @@
     });
 
     // Travellings latéraux entre les étapes (+ traînée de parallaxe).
-    C.pans.forEach((m, k) => tl.fromTo(track, { x: -1920 * k }, { x: -1920 * (k + 1), duration: C.panDur, ease: 'expo.inOut' }, m - C.panDur / 2));
+    const IS = L.st.illScale !== 1 ? ` scale(${L.st.illScale})` : '';
+    C.pans.forEach((m, k) => tl.fromTo(track, { x: -W * k }, { x: -W * (k + 1), duration: C.panDur, ease: 'expo.inOut' }, m - C.panDur / 2));
     proc.push((t) => {
       const x = gsap.getProperty(track, 'x');
       grid.style.backgroundPosition = `${(x * 0.35).toFixed(1)}px 0px`;
@@ -768,20 +832,21 @@
         if (u > 0 && u < 1) bump += Math.pow(Math.sin(Math.PI * u), 2);
       }
       const ib = (bump * 110).toFixed(1), tb = (-bump * 36).toFixed(1);
-      for (const e of ills) e.style.transform = `translateX(${ib}px)`;
+      for (const e of ills) e.style.transform = `translateX(${ib}px)${IS}`;
       for (const e of titles) e.style.transform = `translateX(${tb}px)`;
     });
 
     // Barre de progression.
-    const prog = h('div', { class: 'abs', style: { left: '160px', top: '924px', width: '1600px', height: '60px' } });
+    const PG = L.st.prog;
+    const prog = h('div', { class: 'abs', style: { left: PG.x + 'px', top: PG.y + 'px', width: PG.w + 'px', height: '60px' } });
     sc.append(prog);
-    const base = h('div', { class: 'abs', style: { left: '0px', top: '7px', width: '1600px', height: '2px', background: 'rgba(11,13,18,.13)' } });
-    const fill = h('div', { class: 'abs', style: { left: '0px', top: '6px', width: '1600px', height: '4px', borderRadius: '2px', background: BLUE, transformOrigin: '0% 50%' } });
+    const base = h('div', { class: 'abs', style: { left: '0px', top: '7px', width: PG.w + 'px', height: '2px', background: 'rgba(11,13,18,.13)' } });
+    const fill = h('div', { class: 'abs', style: { left: '0px', top: '6px', width: PG.w + 'px', height: '4px', borderRadius: '2px', background: BLUE, transformOrigin: '0% 50%' } });
     prog.append(base, fill);
     gsap.set(fill, { scaleX: 0 });
     const labels = ['01 Signaler', '02 Qualifier', '03 Intervenir', '04 Suivre'];
     const dots = labels.map((l, i) => {
-      const x = (1600 / 3) * i;
+      const x = (PG.w / 3) * i;
       const d = h('div', { class: 'abs', style: { left: x - 9 + 'px', top: '-1px', width: '18px', height: '18px', borderRadius: '50%', background: CREAM, border: '2.5px solid rgba(11,13,18,.25)' } });
       const lb = h('div', { class: 'abs prog-l', style: { left: x + 'px', top: '30px' } }); lb.textContent = l;
       prog.append(d, lb);
@@ -805,10 +870,10 @@
   function buildSC6() {
     const sc = $('#sc6');
     const g6 = h('div', { class: 'layer' });
-    const WM = wordmark(250);
+    const WM = wordmark(L.wm6.size);
     g6.append(WM.wrap);
     sc.append(g6);
-    placeWordmark(WM, 960, 452);
+    placeWordmark(WM, CX, L.wm6.ringY);
     const wipe = h('div', { class: 'abs', style: { left: WM.rcx - 2300 + 'px', top: WM.rcy - 2300 + 'px', width: '4600px', height: '4600px', borderRadius: '50%', background: BLUE } });
     sc.insertBefore(wipe, g6);
     gsap.set(wipe, { scale: 0 });
@@ -829,23 +894,19 @@
     gsap.set(WM.svg, { autoAlpha: 0 });
     tl.set(WM.svg, { autoAlpha: 1 }, C.sc6);
 
-    const base = h('div', { class: 'abs mask brico base' });
-    base.textContent = 'Dépannage & maintenance des logements';
-    g6.append(base);
-    const words = splitWords(base);
-    const bw = base.getBoundingClientRect().width;
-    Object.assign(base.style, { left: 960 - bw / 2 + 'px', top: '628px' });
+    const words = baseLines(g6, L.base6).flatMap((x) => x.ws);
     gsap.set(words, { yPercent: 110 });
     tl.fromTo(words, { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, C.base2);
 
-    const monoTxt = 'POUR LES GESTIONNAIRES LOCATIFS · PARIS & ÎLE-DE-FRANCE';
-    const mono = h('div', { class: 'abs mono' });
-    mono.textContent = monoTxt;
-    g6.append(mono);
-    const mw = mono.getBoundingClientRect().width;
-    Object.assign(mono.style, { left: 960 - mw / 2 + 'px', top: '724px' });
-    mono.textContent = '';
-    scramble(mono, monoTxt, C.mono2, 0.55, 91);
+    L.mono6.lines.forEach((monoTxt, i) => {
+      const mono = h('div', { class: 'abs mono' });
+      mono.textContent = monoTxt;
+      g6.append(mono);
+      const mw = mono.getBoundingClientRect().width;
+      Object.assign(mono.style, { left: CX - mw / 2 + 'px', top: L.mono6.top + i * L.mono6.lh + 'px' });
+      mono.textContent = '';
+      scramble(mono, monoTxt, C.mono2 + i * 0.12, 0.55, 91 + i);
+    });
 
     // Double « bip » du point : un clin d'œil au « Roger beep » des radios.
     [0, C.beepGap].forEach((dt, i) => {
@@ -862,27 +923,31 @@
   // ---------------------------------------------------------------- 05 — La promesse
   function buildSC5(WM6) {
     const sc = $('#sc5');
-    const slab = h('div', { class: 'abs', style: { left: '-200px', top: '0px', width: '2320px', height: '1400px', background: INK } });
+    const slab = h('div', { class: 'abs', style: { left: '-200px', top: '0px', width: W + 400 + 'px', height: H + 320 + 'px', background: INK } });
     sc.append(slab);
-    gsap.set(slab, { y: 1300, skewY: -6 });
+    gsap.set(slab, { y: H + 220, skewY: -6 });
     tl.set(sc, { autoAlpha: 1 }, C.slab - 0.001);
-    tl.fromTo(slab, { y: 1300, skewY: -6 }, { y: -160, skewY: 0, duration: 0.42, ease: 'expo.inOut' }, C.slab);
+    tl.fromTo(slab, { y: H + 220, skewY: -6 }, { y: -160, skewY: 0, duration: 0.42, ease: 'expo.inOut' }, C.slab);
     tl.set('#sc4', { autoAlpha: 0 }, C.sc5 + 0.12);
     tl.set('#stage', { backgroundColor: INK }, C.sc5 + 0.12);
 
-    const l1 = h('div', { class: 'abs mask brico s5line', style: { top: '268px' } }); l1.textContent = 'Moins d’appels.';
-    const l2 = h('div', { class: 'abs mask brico s5line', style: { top: '486px' } }); l2.textContent = 'Plus de suivi.';
-    sc.append(l1, l2);
-    const c1 = splitChars(l1), c2 = splitChars(l2);
-    c2.slice(8).forEach((e) => { e.style.color = YELLOW; });
-    gsap.set([...c1, ...c2], { yPercent: 112 });
-    chars(c1, C.sc5, null, { dur: 0.55, stagger: 0.022, w0: 300 });
-    chars(c2, C.line2, null, { dur: 0.55, stagger: 0.022, w0: 300 });
+    const lines = L.s5.lines.map(([txt, top, grp, hl]) => {
+      const e = h('div', { class: 'abs mask brico s5line', style: { left: L.s5.x + 'px', top: top + 'px' } });
+      e.textContent = txt; sc.append(e);
+      const cs = splitChars(e);
+      if (hl >= 0) cs.slice(hl).forEach((c) => { c.style.color = YELLOW; });
+      return { e, cs, grp };
+    });
+    const g0 = lines.filter((l) => l.grp === 0).flatMap((l) => l.cs), g1 = lines.filter((l) => l.grp === 1).flatMap((l) => l.cs);
+    gsap.set([...g0, ...g1], { yPercent: 112 });
+    chars(g0, C.sc5, null, { dur: 0.55, stagger: 0.022, w0: 300 });
+    chars(g1, C.line2, null, { dur: 0.55, stagger: 0.022, w0: 300 });
 
     // Téléphone : le compteur redescend à zéro.
-    const phone = h('div', { class: 'abs', style: { left: 1650 - 78 + 'px', top: 371 - 78 + 'px', width: '156px', height: '156px' } });
+    const [PX, PY] = L.s5.phone, [RX, RY] = L.s5.ring;
+    const phone = h('div', { class: 'abs', style: { left: PX - 78 + 'px', top: PY - 78 + 'px', width: '156px', height: '156px' } });
     phone.innerHTML = icon('phone', 156, CREAM, 1.5);
-    const cnt = h('div', { class: 'abs cnt5', style: { left: 1650 + 26 + 'px', top: 371 - 116 + 'px' } }); cnt.textContent = '12';
+    const cnt = h('div', { class: 'abs cnt5', style: { left: PX + 26 + 'px', top: PY - 116 + 'px' } }); cnt.textContent = '12';
     sc.append(phone, cnt);
     pop(phone, C.sc5 + 0.08, { scale: 0.4, rotation: -30 }, { dur: 0.6, ease: 'back.out(2)' });
     pop(cnt, C.sc5 + 0.2, { scale: 0 }, { dur: 0.45, ease: 'back.out(3)' });
@@ -897,7 +962,7 @@
     // Anneau de progression → devient le « O » du logo.
     const SWu = 100 * RING.sw / RING.d, DRu = 100 * RING.dot / RING.d, Ru = (100 - SWu) / 2;
     const ring = s('svg', { width: 170, height: 170, viewBox: '0 0 100 100' });
-    Object.assign(ring.style, { position: 'absolute', left: 1650 - 85 + 'px', top: 589 - 85 + 'px', overflow: 'visible' });
+    Object.assign(ring.style, { position: 'absolute', left: RX - 85 + 'px', top: RY - 85 + 'px', overflow: 'visible' });
     const trk = s('circle', { cx: 50, cy: 50, r: Ru, fill: 'none', stroke: 'rgba(242,238,230,.14)', 'stroke-width': SWu });
     const prg = s('circle', { cx: 50, cy: 50, r: Ru, fill: 'none', stroke: YELLOW, 'stroke-width': SWu, 'stroke-linecap': 'round', transform: 'rotate(-90 50 50)' });
     const dot = s('circle', { cx: 50, cy: 50, r: DRu, fill: YELLOW });
@@ -912,9 +977,9 @@
 
     // Vol vers le logo final.
     const fly = C.sc6 - C.ringFly;
-    tl.to([l1, l2], { y: -40, autoAlpha: 0, duration: 0.2, ease: 'power2.in', stagger: 0.04 }, C.ringFly - 0.04);
+    tl.to(lines.map((l) => l.e), { y: -40, autoAlpha: 0, duration: 0.2, ease: 'power2.in', stagger: 0.04 }, C.ringFly - 0.04);
     tl.to(phone, { y: -40, autoAlpha: 0, duration: 0.2, ease: 'power2.in' }, C.ringFly - 0.04);
-    tl.fromTo(ring, { x: 0, y: 0, scale: 1 }, { x: WM6.rcx - 1650, y: WM6.rcy - 589, scale: WM6.D / 170, duration: fly, ease: 'expo.inOut' }, C.ringFly);
+    tl.fromTo(ring, { x: 0, y: 0, scale: 1 }, { x: WM6.rcx - RX, y: WM6.rcy - RY, scale: WM6.D / 170, duration: fly, ease: 'expo.inOut' }, C.ringFly);
     tl.to(prg, { stroke: CREAM, duration: fly * 0.8, ease: 'none' }, C.ringFly);
     tl.to(trk, { autoAlpha: 0, duration: 0.15, ease: 'none' }, C.ringFly);
     tl.set(ring, { autoAlpha: 0 }, C.sc6 + 0.001);
@@ -954,8 +1019,8 @@
   function preview() {
     const stage = $('#stage');
     const fit = () => {
-      const k = Math.min(innerWidth / 1920, innerHeight / 1080);
-      Object.assign(stage.style, { transformOrigin: '0 0', transform: `translate(${(innerWidth - 1920 * k) / 2}px, ${(innerHeight - 1080 * k) / 2}px) scale(${k})` });
+      const k = Math.min(innerWidth / W, innerHeight / H);
+      Object.assign(stage.style, { transformOrigin: '0 0', transform: `translate(${(innerWidth - W * k) / 2}px, ${(innerHeight - H * k) / 2}px) scale(${k})` });
     };
     fit(); addEventListener('resize', fit);
     document.body.style.overflow = 'hidden';

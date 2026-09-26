@@ -1,7 +1,8 @@
 # ROGER — film d'introduction (20 s)
 
 Film de motion design de 20 secondes présentant ROGER, avec image et son **entièrement générés par code**.
-Format : 1920 × 1080, 60 images/s, flou de bouger (obturateur à 180°), son stéréo 48 kHz.
+Deux formats, même animation et même bande-son : **16:9** (1920 × 1080) et **9:16** (1080 × 1920, pour Reels, TikTok, Shorts et stories).
+60 images/s, flou de bouger (obturateur à 180°), son stéréo 48 kHz.
 
 ![Planche : une image toutes les 0,5 s](storyboard.jpg)
 
@@ -26,7 +27,12 @@ Format : 1920 × 1080, 60 images/s, flou de bouger (obturateur à 180°), son st
 - `index.html`, `style.css`, `main.js` : l'animation (GSAP en pause + effets procéduraux). `window.seek(t)` rend l'image exacte à l'instant `t`.
 - `audio.mjs` : la bande-son synthétisée (batterie, basse, nappes, bruitages d'interface, réverbe, limiteur) → `out/audio.wav`.
 - `render.mjs` : rendu image par image dans Chromium, moyenne des sous-images (flou de bouger), encodage H.264 + AAC.
-- `roger_intro.mp4` : le film rendu.
+- `roger_intro.mp4` : le film en 16:9. `roger_intro_9x16.mp4` : le film en 9:16.
+- `storyboard.jpg`, `storyboard_9x16.jpg` : une image toutes les 0,5 s.
+
+La version 9:16 n'est pas un recadrage : chaque scène est recomposée (éléments empilés, textes plus grands pour le
+téléphone, textes importants tenus hors des zones couvertes par l'interface des réseaux sociaux). Les deux mises en page
+sont décrites en tête de `main.js` (`LAND` et `VERT`).
 
 ## Refaire le rendu
 
@@ -37,13 +43,16 @@ npm install
 npx playwright install chromium   # si Chromium n'est pas déjà installé
 npm run fonts          # Bricolage Grotesque, Inter, JetBrains Mono (Google Fonts, licence OFL)
 npm run render         # → out/roger_intro.mp4 (4 à 7 min sur 4 cœurs)
+npm run render:9x16    # → out/roger_intro_9x16.mp4
 ```
 
 Autres commandes :
 
 ```bash
-node render.mjs stills 2.5 7.4 13.6   # images fixes → out/stills/
+node render.mjs stills 2.5 7.4 13.6                  # images fixes → out/stills/
+node render.mjs stills --format 9x16 2.5 7.4 13.6    # → out/stills_9x16/
 npm run audio && npm run preview       # puis ouvrir http://localhost:8080/index.html?play (clic pour lancer)
+                                       # ou index.html?play&format=9x16 pour le vertical
 ```
 
 Pour changer un texte, une couleur ou un timing : `main.js` (textes, couleurs en tête de fichier) et `cues.js` (instants).

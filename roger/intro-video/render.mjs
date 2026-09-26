@@ -1,6 +1,7 @@
 // Rendu image par image de index.html (window.seek(t)) avec Chromium headless.
 //   node render.mjs stills 0.5 1.2 3.3          → out/stills/t_0.500.png …
 //   node render.mjs video --samples 6 --workers 4 --out out/roger.mp4 [--audio out/audio.wav]
+//   --format 9x16 : version verticale 1080×1920 (même animation, mise en page recomposée)
 // Flou de bouger : chaque image = moyenne de N sous-images réparties sur un obturateur à 180°.
 import { chromium } from 'playwright';
 import http from 'node:http';
@@ -11,10 +12,11 @@ import C from './cues.js';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
-const W = 1920, H = 1080, FPS = C.FPS, DUR = C.DUR;
 const argv = process.argv.slice(2);
 const mode = argv[0];
 const opt = (name, def) => { const i = argv.indexOf('--' + name); return i >= 0 ? argv[i + 1] : def; };
+const VERT = opt('format', '16x9') === '9x16';
+const W = VERT ? 1080 : 1920, H = VERT ? 1920 : 1080, FPS = C.FPS, DUR = C.DUR;
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 function startServer() {
@@ -37,7 +39,7 @@ async function openPage(browser, port) {
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => console.error('[pageerror]', e.message));
   page.on('console', (m) => { if (m.type() === 'error') console.error('[console]', m.text()); });
-  await page.goto(`http://127.0.0.1:${port}/index.html`);
+  await page.goto(`http://127.0.0.1:${port}/index.html${VERT ? '?format=9x16' : ''}`);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 60000 });
   const cdp = await page.context().newCDPSession(page);
   return { page, cdp };
@@ -84,11 +86,11 @@ const srv = await startServer();
 const port = srv.address().port;
 try {
   if (mode === 'stills') {
-    const dir = path.join(ROOT, 'out', 'stills');
+    const dir = path.join(ROOT, 'out', VERT ? 'stills_9x16' : 'stills');
     fs.mkdirSync(dir, { recursive: true });
     const browser = await chromium.launch();
     const pg = await openPage(browser, port);
-    const times = argv.slice(1).filter((a) => !a.startsWith('--')).map(Number).sort((a, b) => a - b);
+    const times = argv.slice(1).filter((a, i, arr) => !a.startsWith('--') && !(arr[i - 1] || '').startsWith('--')).map(Number).sort((a, b) => a - b);
     let f = 0;
     for (const t of times) {
       // rejoue la timeline image par image jusqu'à t (état identique au rendu vidéo)
@@ -104,9 +106,9 @@ try {
     const shutter = Number(opt('shutter', '0.5'));
     const workers = Number(opt('workers', '4'));
     const from = Number(opt('from', '0')), to = Number(opt('to', String(FPS * DUR)));
-    const out = path.resolve(ROOT, opt('out', 'out/roger.mp4'));
+    const out = path.resolve(ROOT, opt('out', VERT ? 'out/roger_intro_9x16.mp4' : 'out/roger_intro.mp4'));
     const audio = opt('audio', null);
-    const tmp = path.join(ROOT, 'out', 'chunks');
+    const tmp = path.join(ROOT, 'out', VERT ? 'chunks_9x16' : 'chunks');
     fs.mkdirSync(tmp, { recursive: true });
     const n = to - from, per = Math.ceil(n / workers);
     const chunks = [];
