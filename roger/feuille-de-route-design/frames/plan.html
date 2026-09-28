@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Piste 1 — Plan d'exécution</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  html, body { margin: 0; background: #000; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="kit.js"></script>
+<script>
+(async function () {
+  'use strict';
+  const { el, hatch, cloudPath, ready, frame } = KIT;
+  const F = frame || 'comprendre';
+  const V = F === 'preparer';
+  const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+
+  // Piste 1 — « Plan d'exécution » : le film comme un dossier technique qui se dessine.
+  const PAPER = '#F3F4F1', INK = '#1C2127', GREY = '#7D8791', BLUE = '#1F4FA6', TIRAGE = '#163A70', ORANGE = '#F0641E', LINE = '#F4F6FA';
+  const COND = 'Barlow Condensed', SANS = 'Barlow', MONO = 'IBM Plex Mono';
+
+  await Promise.all(['700 80px "Barlow Condensed"', '800 80px "Barlow Condensed"', '600 80px "Barlow Condensed"', '500 30px Barlow', '600 30px Barlow',
+    '400 16px "IBM Plex Mono"', '500 16px "IBM Plex Mono"', '600 16px "IBM Plex Mono"'].map((f) => document.fonts.load(f)));
+
+  const dark = F === 'promesse';
+  const C = dark
+    ? { bg: TIRAGE, ink: LINE, grey: 'rgba(244,246,250,.62)', accent: ORANGE, blue: '#9CC0FF', grid1: 'rgba(244,246,250,.05)', grid2: 'rgba(244,246,250,.09)' }
+    : { bg: PAPER, ink: INK, grey: GREY, accent: ORANGE, blue: BLUE, grid1: 'rgba(38,78,110,.07)', grid2: 'rgba(38,78,110,.13)' };
+
+  const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` }, document.getElementById('stage'));
+  const defs = el('defs', {}, svg);
+
+  // ------------------------------------------------------------------ outils
+  function T(p, x, y, s, o = {}) {
+    const t = el('text', {
+      x, y, fill: o.fill || C.ink, 'font-family': o.ff || SANS, 'font-size': o.size || 20, 'font-weight': o.w || 400,
+      'text-anchor': o.anchor || 'start', 'letter-spacing': o.ls || 0, opacity: o.op, transform: o.tf,
+      'dominant-baseline': o.db,
+    }, p);
+    if (o.html) t.innerHTML = s; else t.textContent = s;
+    if (o.maxW) fit(t, o.maxW);
+    return t;
+  }
+  function fit(t, maxW) {
+    const w = t.getComputedTextLength();
+    if (w > maxW) t.setAttribute('font-size', (parseFloat(t.getAttribute('font-size')) * maxW / w).toFixed(2));
+  }
+  const mono = (p, x, y, s, o = {}) => T(p, x, y, s, Object.assign({ ff: MONO, size: 14, w: 500, ls: 14 * 0.1, fill: C.grey }, o));
+  const line = (p, x1, y1, x2, y2, o = {}) => el('line', { x1, y1, x2, y2, stroke: o.stroke || C.ink, 'stroke-width': o.sw || 1, 'stroke-dasharray': o.dash, opacity: o.op, 'stroke-linecap': o.cap }, p);
+  const rect = (p, x, y, w, h, o = {}) => el('rect', { x, y, width: w, height: h, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.sw, opacity: o.op, rx: o.rx }, p);
+  const AXIS = '30 6 4 6';
+
+  // cote d'architecte : lignes d'attache, ligne de cote, traits obliques, valeur au-dessus
+  function dimH(p, x1, x2, y, label, o = {}) {
+    const g = el('g', {}, p), col = o.color || C.ink;
+    if (o.from !== undefined) { const e = o.from > y ? y - 8 : y + 8; line(g, x1, o.from, x1, e, { stroke: col, sw: 0.8 }); line(g, x2, o.from, x2, e, { stroke: col, sw: 0.8 }); }
+    line(g, x1 - 14, y, x2 + 14, y, { stroke: col, sw: 1 });
+    for (const x of [x1, x2]) line(g, x - 6, y + 6, x + 6, y - 6, { stroke: col, sw: 2 });
+    mono(g, (x1 + x2) / 2, y - 9, label, { anchor: 'middle', fill: col, size: 16, ls: 1 });
+    return g;
+  }
+  function dimV(p, x, y1, y2, label, o = {}) {
+    const g = el('g', {}, p), col = o.color || C.ink;
+    if (o.from !== undefined) { line(g, o.from, y1, x - 8, y1, { stroke: col, sw: 0.8 }); line(g, o.from, y2, x - 8, y2, { stroke: col, sw: 0.8 }); }
+    line(g, x, y1 + 14, x, y2 - 14, { stroke: col, sw: 1 });
+    for (const y of [y1, y2]) line(g, x - 6, y + 6, x + 6, y - 6, { stroke: col, sw: 2 });
+    mono(g, x - 10, (y1 + y2) / 2, label, { anchor: 'middle', fill: col, size: 16, ls: 1, tf: `rotate(-90 ${x - 10} ${(y1 + y2) / 2})` });
+    return g;
+  }
+  function balloon(p, x, y, n, o = {}) {
+    const col = o.color || C.ink, r = o.r || 17;
+    el('circle', { cx: x, cy: y, r, fill: o.fill || C.bg, stroke: col, 'stroke-width': 1.5 }, p);
+    T(p, x, y + 0.5, String(n), { ff: MONO, size: o.size || 16, w: 600, anchor: 'middle', db: 'central', fill: col });
+  }
+  function leader(p, pts, o = {}) {
+    const col = o.color || C.ink;
+    el('polyline', { points: pts.map((q) => q.join(',')).join(' '), fill: 'none', stroke: col, 'stroke-width': o.sw || 1.1 }, p);
+    el('circle', { cx: pts[0][0], cy: pts[0][1], r: 3, fill: col }, p);
+  }
+  function drop(p, x, y, s, col) {
+    el('path', { d: `M${x},${y - 11 * s} C${x + 7 * s},${y - 2 * s} ${x + 6 * s},${y + 5 * s} ${x},${y + 5 * s} C${x - 6 * s},${y + 5 * s} ${x - 7 * s},${y - 2 * s} ${x},${y - 11 * s}Z`, fill: col }, p);
+  }
+
+  // ------------------------------------------------------------------ feuille : papier, quadrillage, cadre, repères de grille
+  function paper() {
+    rect(svg, 0, 0, W, H, { fill: C.bg });
+    if (dark) {
+      const rg = el('radialGradient', { id: 'vig', cx: '42%', cy: '40%', r: '75%' }, defs);
+      el('stop', { offset: '0', 'stop-color': '#1D4786' }, rg);
+      el('stop', { offset: '1', 'stop-color': '#12305E' }, rg);
+      rect(svg, 0, 0, W, H, { fill: 'url(#vig)' });
+    }
+    const f = el('filter', { id: 'grain', x: 0, y: 0, width: '100%', height: '100%' }, defs);
+    el('feTurbulence', { type: 'fractalNoise', baseFrequency: dark ? 0.9 : 0.75, numOctaves: 2, seed: 7, stitchTiles: 'stitch' }, f);
+    el('feColorMatrix', { type: 'matrix', values: dark ? '0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0' : '0 0 0 0 0.1  0 0 0 0 0.12  0 0 0 0 0.14  0 0 0 .05 0' }, f);
+    rect(svg, 0, 0, W, H, { fill: '#fff' }).setAttribute('filter', 'url(#grain)');
+    const pm = el('pattern', { id: 'gmin', width: 10, height: 10, patternUnits: 'userSpaceOnUse', x: 56, y: 56 }, defs);
+    el('path', { d: 'M10 0H0V10', fill: 'none', stroke: C.grid1, 'stroke-width': 0.7 }, pm);
+    const pM = el('pattern', { id: 'gmaj', width: 50, height: 50, patternUnits: 'userSpaceOnUse', x: 56, y: 56 }, defs);
+    el('path', { d: 'M50 0H0V50', fill: 'none', stroke: C.grid2, 'stroke-width': 1 }, pM);
+    rect(svg, 56, 56, W - 112, H - 112, { fill: 'url(#gmin)' });
+    rect(svg, 56, 56, W - 112, H - 112, { fill: 'url(#gmaj)' });
+  }
+  function sheetFrame(cols, rows) {
+    const g = el('g', {}, svg), col = C.ink;
+    rect(g, 24, 24, W - 48, H - 48, { stroke: col, sw: 1, op: 0.45 });
+    rect(g, 56, 56, W - 112, H - 112, { stroke: col, sw: 2.2 });
+    const cw = (W - 112) / cols, rh = (H - 112) / rows;
+    for (let i = 0; i < cols; i++) {
+      const cx = 56 + cw * (i + 0.5);
+      mono(g, cx, 41, String(i + 1), { anchor: 'middle', db: 'central', size: 13, fill: col, op: 0.6 });
+      mono(g, cx, H - 39, String(i + 1), { anchor: 'middle', db: 'central', size: 13, fill: col, op: 0.6 });
+      if (i) { const x = 56 + cw * i; line(g, x, 24, x, 56, { stroke: col, sw: 1, op: 0.45 }); line(g, x, H - 56, x, H - 24, { stroke: col, sw: 1, op: 0.45 }); }
+    }
+    for (let j = 0; j < rows; j++) {
+      const cy = 56 + rh * (j + 0.5), L = String.fromCharCode(65 + j);
+      mono(g, 40, cy, L, { anchor: 'middle', db: 'central', size: 13, fill: col, op: 0.6 });
+      mono(g, W - 40, cy, L, { anchor: 'middle', db: 'central', size: 13, fill: col, op: 0.6 });
+      if (j) { const y = 56 + rh * j; line(g, 24, y, 56, y, { stroke: col, sw: 1, op: 0.45 }); line(g, W - 56, y, W - 24, y, { stroke: col, sw: 1, op: 0.45 }); }
+    }
+    // repères de centrage
+    const tri = (pts) => el('polygon', { points: pts, fill: col }, g);
+    tri(`${W / 2 - 9},56 ${W / 2 + 9},56 ${W / 2},70`); tri(`${W / 2 - 9},${H - 56} ${W / 2 + 9},${H - 56} ${W / 2},${H - 70}`);
+    tri(`56,${H / 2 - 9} 56,${H / 2 + 9} 70,${H / 2}`); tri(`${W - 56},${H / 2 - 9} ${W - 56},${H / 2 + 9} ${W - 70},${H / 2}`);
+  }
+
+  // cartouche : le bloc d'identification de chaque planche
+  function cartouche(x, y, w, h, o) {
+    const g = el('g', {}, svg), col = C.ink;
+    rect(g, x, y, w, h, { fill: C.bg, stroke: col, sw: 2 });
+    const r1 = y + h * 0.4, r2 = y + h * 0.7;
+    line(g, x, r1, x + w, r1, { stroke: col, sw: 1 });
+    line(g, x, r2, x + w, r2, { stroke: col, sw: 1 });
+    const c1 = x + o.logoW;
+    line(g, c1, y, c1, r1, { stroke: col, sw: 1 });
+    T(g, x + 16, r1 - 17, 'ROGER', { ff: COND, w: 800, size: 44, ls: 1.5 });
+    mono(g, c1 + 14, y + 20, o.k1, { size: 11, fill: C.grey });
+    T(g, c1 + 14, r1 - 14, o.v1, { ff: SANS, w: 600, size: 22, maxW: w - o.logoW - 28 });
+    // ligne 2 : phase, échelle, indice
+    const cells = o.row2;
+    let cx = x;
+    cells.forEach(([k, v, cw], i) => {
+      if (i) line(g, cx, r1, cx, r2, { stroke: col, sw: 1 });
+      mono(g, cx + 12, r1 + 16, k, { size: 10.5, fill: C.grey });
+      T(g, cx + 12, r2 - 9, v, { ff: SANS, w: 600, size: 17, maxW: cw - 22 });
+      cx += cw;
+    });
+    // ligne 3 : avancement des 5 phases + statut
+    if (o.phase) {
+      const pw = o.phaseW, cellW = pw / 5;
+      for (let i = 0; i < 5; i++) {
+        const px = x + i * cellW;
+        if (i < o.phase) rect(g, px, r2, cellW, y + h - r2, { fill: i === o.phase - 1 ? C.blue : dark ? 'rgba(156,192,255,.35)' : 'rgba(31,79,166,.22)' });
+        if (i) line(g, px, r2, px, y + h, { stroke: col, sw: 1 });
+        mono(g, px + cellW / 2, (r2 + y + h) / 2, `0${i + 1}`, { anchor: 'middle', db: 'central', size: 12, w: 600, fill: i === o.phase - 1 ? '#fff' : col });
+      }
+      line(g, x + pw, r2, x + pw, y + h, { stroke: col, sw: 1 });
+      mono(g, x + pw + 12, r2 + (y + h - r2) / 2, o.status, { db: 'central', size: 11, fill: C.grey, maxW: w - pw - 22 });
+    } else {
+      mono(g, x + 14, r2 + (y + h - r2) / 2, o.status, { db: 'central', size: 11, fill: C.grey, maxW: w - 28 });
+    }
+    return g;
+  }
+
+  // ------------------------------------------------------------------ coupe du meuble sous évier (cotes en mm)
+  function sinkSection(p, ox, oy, s, o = {}) {
+    const X = (x) => ox + x * s, Y = (y) => oy - y * s;
+    const g = el('g', { opacity: o.op }, p);
+    const col = o.ink || C.ink, lw = o.lw || 1;
+    const cut = hatch(defs, 'hc' + o.id, { angle: 45, gap: 6, color: col, width: 0.9 * lw });
+    const wallH = hatch(defs, 'hw' + o.id, { angle: 45, gap: 11, color: col, width: 0.8 * lw });
+    const ground = hatch(defs, 'hg' + o.id, { angle: 45, gap: 7, color: col, width: 0.9 * lw });
+    const R = (x0, y0, x1, y1, fill, sw = 1.3) => rect(g, X(x0), Y(y1), (x1 - x0) * s, (y1 - y0) * s, { fill, stroke: col, sw: sw * lw });
+    const PL = (pts, a = {}) => el('polyline', { points: pts.map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join(' '), fill: 'none', stroke: a.stroke || col, 'stroke-width': (a.sw || 1.4) * lw, 'stroke-dasharray': a.dash, 'stroke-linejoin': 'round' }, g);
+
+    // sol et dalle
+    rect(g, X(-140), Y(0), 920 * s, 22, { fill: ground });
+    PL([[-140, 0], [780, 0]], { sw: 2.4 });
+    // mur du fond (coupé), rompu en haut
+    const zz = [[592, 1010], [640, 1010], [652, 1030], [668, 990], [680, 1010], [770, 1010]];
+    const wallPts = [[600, -30], [760, -30], [760, 1010], [680, 1010], [668, 990], [652, 1030], [640, 1010], [600, 1010]];
+    el('polygon', { points: wallPts.map(([x, y]) => `${X(x)},${Y(y)}`).join(' '), fill: wallH }, g);
+    PL([[600, 1010], [600, -30]], { sw: 1.6 }); PL([[760, 1010], [760, -30]], { sw: 1.6 });
+    PL(zz, { sw: 1.2 });
+    // plan de travail (coupé), de part et d'autre de la cuve
+    R(-20, 870, 72, 900, cut); R(488, 870, 600, 900, cut);
+    // cuve inox en coupe (tôle épaisse)
+    el('path', {
+      d: `M${X(56)},${Y(902)} L${X(86)},${Y(902)} L${X(94)},${Y(718)} Q${X(96)},${Y(698)} ${X(116)},${Y(698)} L${X(264)},${Y(698)} M${X(296)},${Y(698)} L${X(444)},${Y(698)} Q${X(464)},${Y(698)} ${X(466)},${Y(718)} L${X(474)},${Y(902)} L${X(504)},${Y(902)}`,
+      fill: 'none', stroke: col, 'stroke-width': 3.2 * lw, 'stroke-linejoin': 'round',
+    }, g);
+    // bonde + tube de vidage
+    R(254, 690, 306, 700, col, 1);
+    PL([[266, 690], [266, 572]]); PL([[294, 690], [294, 572]]);
+    // écrou haut (coupé)
+    R(254, 548, 306, 572, cut);
+    // corps du siphon (bouteille) et culot
+    el('path', {
+      d: `M${X(248)},${Y(548)} L${X(248)},${Y(430)} Q${X(248)},${Y(418)} ${X(260)},${Y(418)} L${X(300)},${Y(418)} Q${X(312)},${Y(418)} ${X(312)},${Y(430)} L${X(312)},${Y(488)} M${X(312)},${Y(522)} L${X(312)},${Y(548)}`,
+      fill: 'none', stroke: col, 'stroke-width': 1.6 * lw,
+    }, g);
+    R(240, 392, 320, 420, cut);
+    PL([[268, 548], [268, 452]], { sw: 1, dash: '7 5', stroke: o.grey || C.grey });
+    PL([[292, 548], [292, 452]], { sw: 1, dash: '7 5', stroke: o.grey || C.grey });
+    // sortie, écrou de sortie (zone du joint), évacuation jusqu'au mur
+    PL([[312, 522], [340, 522]]); PL([[312, 488], [340, 488]]);
+    R(318, 478, 346, 532, cut);
+    el('polygon', { points: `${X(336)},${Y(520)} ${X(345)},${Y(522)} ${X(345)},${Y(488)} ${X(336)},${Y(490)}`, fill: col }, g);
+    PL([[346, 522], [600, 522]], { sw: 1.6 }); PL([[346, 488], [600, 488]], { sw: 1.6 });
+    PL([[600, 522], [700, 522]], { sw: 1, dash: '7 5', stroke: o.grey || C.grey }); PL([[600, 488], [700, 488]], { sw: 1, dash: '7 5', stroke: o.grey || C.grey });
+    R(597, 480, 611, 530, col, 1);
+    // axes
+    PL([[280, 730], [280, 372]], { sw: 0.9, dash: AXIS, stroke: o.grey || C.grey });
+    PL([[296, 505], [720, 505]], { sw: 0.9, dash: AXIS, stroke: o.grey || C.grey });
+    // meuble : porte (coupée), fond, socle
+    R(0, 100, 19, 858, cut); R(0, 100, 588, 118, cut); R(46, 0, 64, 100, cut);
+    return { g, X, Y };
+  }
+
+  // ================================================================== 02 — COMPRENDRE (16:9)
+  function comprendre() {
+    paper();
+    sheetFrame(8, 5);
+    // --- colonne de gauche
+    const left = el('g', {}, svg);
+    rect(left, 112, 132, 12, 12, { fill: C.blue });
+    mono(left, 136, 143, 'PHASE 02 / 05', { size: 17, fill: C.ink, ls: 2.4 });
+    T(left, 104, 296, 'Comprendre', { ff: COND, w: 700, size: 156, ls: -2, maxW: 600 });
+    T(left, 110, 356, 'Un diagnostic avant de se déplacer.', { ff: SANS, w: 500, size: 34, maxW: 590, fill: C.ink });
+    // fiche de diagnostic
+    mono(left, 112, 452, 'FICHE DE DIAGNOSTIC · DOSSIER APPT 3B', { size: 13 });
+    const rows = [
+      ['SIGNALEMENT', '2 photos · 1 message du locataire', C.ink],
+      ['HYPOTHÈSE', 'Joint du siphon ?', C.ink],
+      ['PRÉCISION', 'Une photo du joint, de plus près', C.ink],
+      ['DIAGNOSTIC', 'Joint usé, siphon fissuré', C.blue],
+    ];
+    rows.forEach(([k, v, col], i) => {
+      const y = 470 + i * 62;
+      line(left, 112, y, 690, y, { stroke: C.ink, sw: i ? 0.8 : 1.6, op: i ? 0.35 : 1 });
+      mono(left, 112, y + 38, k, { size: 13, fill: C.grey });
+      T(left, 290, y + 40, v, { ff: SANS, w: i === 3 ? 700 : 500, size: 25, fill: col, maxW: 390 });
+    });
+    line(left, 112, 718, 690, 718, { stroke: C.ink, sw: 1.6 });
+    // coche du diagnostic
+    const ck = el('g', { transform: 'translate(662 687)' }, left);
+    el('circle', { cx: 0, cy: 0, r: 15, fill: C.blue }, ck);
+    el('path', { d: 'M-7,0 L-2,5 L7,-5', fill: 'none', stroke: '#fff', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, ck);
+    mono(left, 112, 776, 'NOTA — Diagnostic établi sur photos, précision', { size: 14, fill: C.grey, ls: 0.6 });
+    mono(left, 112, 800, 'demandée au locataire avant tout déplacement.', { size: 14, fill: C.grey, ls: 0.6 });
+
+    // --- coupe A-A
+    const s = 0.72, ox = 872, oy = 872;
+    const { g, X, Y } = sinkSection(svg, ox, oy, s, { id: 'a' });
+    // fuite : gouttes, flaque, nuage de révision
+    for (const [x, y, k] of [[341, 464, 1], [337, 418, 0.9], [343, 360, 0.8]]) drop(g, X(x), Y(y), k * 1.25, C.accent);
+    el('path', { d: `M${X(240)},${Y(118)} C${X(262)},${Y(126)} ${X(300)},${Y(127)} ${X(335)},${Y(126)} C${X(375)},${Y(127)} ${X(415)},${Y(125)} ${X(438)},${Y(118)} Z`, fill: 'rgba(240,100,30,.22)', stroke: C.accent, 'stroke-width': 1.4 }, g);
+    const jx = X(332), jy = Y(505);
+    el('path', { d: cloudPath(jx, jy, 62, 52, 13), fill: 'none', stroke: C.accent, 'stroke-width': 2 }, g);
+    // repère de détail A
+    const ax = jx + 4, ay = jy - 70;
+    // cotes
+    dimH(svg, X(0), X(600), Y(900) - 42, '600', { from: Y(900) - 6 });
+    dimV(svg, X(-20) - 52, Y(0), Y(900), '900', { from: X(-20) - 6 });
+    // repères de nomenclature
+    leader(svg, [[X(266), Y(640)], [X(150), Y(640)]]); balloon(svg, X(150) - 17, Y(640), 1);
+    leader(svg, [[X(248), Y(470)], [X(150), Y(470)]]); balloon(svg, X(150) - 17, Y(470), 2);
+    leader(svg, [[X(560), Y(488)], [X(560), Y(372)]]); balloon(svg, X(560), Y(372) + 17, 4);
+    leader(svg, [[X(346), Y(478)], [X(420), Y(392)]], { color: C.accent }); balloon(svg, X(420) + 12, Y(392) + 12, 3, { color: C.accent });
+    // appel de détail
+    leader(svg, [[ax + 12, ay - 12], [1492, 300]], { color: C.ink, sw: 1 });
+    el('circle', { cx: ax, cy: ay, r: 17, fill: C.bg, stroke: C.ink, 'stroke-width': 1.5 }, svg);
+    T(svg, ax, ay + 1, 'A', { ff: COND, w: 700, size: 22, anchor: 'middle', db: 'central' });
+    // titre de vue
+    T(svg, X(0), 952, 'COUPE A-A', { ff: COND, w: 700, size: 24, ls: 1.5 });
+    line(svg, X(0), 959, X(0) + 104, 959, { stroke: C.ink, sw: 2 });
+    mono(svg, X(0) + 124, 951, 'ÉCH. 1:10 · MEUBLE SOUS ÉVIER', { size: 14 });
+
+    // --- détail A (échelle 1:2)
+    const cx = 1648, cy = 372, r = 168, sd = 4.1;
+    const dx = (m) => cx + (m - 332) * sd, dy = (m) => cy - (m - 505) * sd;
+    const cp = el('clipPath', { id: 'detA' }, defs);
+    el('circle', { cx, cy, r }, cp);
+    el('circle', { cx, cy, r, fill: C.bg }, svg);
+    const dg = el('g', { 'clip-path': 'url(#detA)' }, svg);
+    const pm = el('pattern', { id: 'dgmin', width: 10, height: 10, patternUnits: 'userSpaceOnUse' }, defs);
+    el('path', { d: 'M10 0H0V10', fill: 'none', stroke: C.grid1, 'stroke-width': 0.7 }, pm);
+    rect(dg, cx - r, cy - r, 2 * r, 2 * r, { fill: 'url(#dgmin)' });
+    const cutD = hatch(defs, 'hcd', { angle: 45, gap: 7, color: C.ink, width: 1 });
+    const RD = (x0, y0, x1, y1, fill, sw = 1.6) => rect(dg, dx(x0), dy(y1), (x1 - x0) * sd, (y1 - y0) * sd, { fill, stroke: C.ink, sw });
+    RD(300, 430, 312, 580, cutD);                     // paroi du siphon
+    RD(312, 519, 338, 523, cutD, 1.2); RD(312, 487, 338, 491, cutD, 1.2);   // embout de sortie
+    RD(318, 523, 348, 534, cutD); RD(318, 476, 348, 487, cutD);             // écrou
+    RD(348, 519, 420, 523, cutD, 1.2); RD(348, 487, 420, 491, cutD, 1.2);   // tube d'évacuation
+    // joint conique (usé : entaillé)
+    el('polygon', { points: `${dx(338)},${dy(523)} ${dx(348)},${dy(523)} ${dx(348)},${dy(519)} ${dx(341)},${dy(518)}`, fill: C.ink }, dg);
+    el('polygon', { points: `${dx(338)},${dy(487)} ${dx(348)},${dy(487)} ${dx(348)},${dy(491)} ${dx(343)},${dy(492)} ${dx(341)},${dy(489)}`, fill: C.ink }, dg);
+    line(dg, dx(290), dy(505), dx(430), dy(505), { stroke: C.grey, sw: 0.9, dash: AXIS });
+    // fissure et suintement
+    el('polyline', { points: [[312, 484], [316, 481], [314, 477], [319, 472], [317, 466]].map(([x, y]) => `${dx(x)},${dy(y)}`).join(' '), fill: 'none', stroke: C.accent, 'stroke-width': 2.4, 'stroke-linejoin': 'round' }, dg);
+    el('polyline', { points: [[341, 489], [344, 485], [343, 481]].map(([x, y]) => `${dx(x)},${dy(y)}`).join(' '), fill: 'none', stroke: C.accent, 'stroke-width': 2.4 }, dg);
+    drop(dg, dx(343), dy(468), 1.5, C.accent); drop(dg, dx(340), dy(452), 1.25, C.accent);
+    el('path', { d: `M${dx(318)},${dy(475.5)} Q${dx(333)},${dy(472)} ${dx(348)},${dy(475.5)}`, fill: 'none', stroke: C.accent, 'stroke-width': 2.2 }, dg);
+    el('circle', { cx, cy, r, fill: 'none', stroke: C.ink, 'stroke-width': 2 }, svg);
+    // renvois a / b dans le détail
+    const tag = (x, y, t, col) => { el('circle', { cx: x, cy: y, r: 14, fill: C.bg, stroke: col, 'stroke-width': 1.4 }, svg); T(svg, x, y + 1, t, { ff: MONO, w: 600, size: 15, anchor: 'middle', db: 'central', fill: col }); };
+    line(svg, dx(347), dy(521), dx(366), dy(534), { stroke: C.accent, sw: 1.1 }); tag(dx(366) + 11, dy(534) + 8, 'a', C.accent);
+    line(svg, dx(315), dy(470), 1503, 537, { stroke: C.accent, sw: 1.1 }); tag(1492, 542, 'b', C.accent);
+    T(svg, cx, cy + r + 40, 'DÉTAIL A', { ff: COND, w: 700, size: 24, ls: 1.5, anchor: 'middle' });
+    mono(svg, cx, cy + r + 64, 'ÉCH. 1:2', { size: 14, anchor: 'middle' });
+    // légende
+    const lg = el('g', {}, svg);
+    const lx = 1476;
+    [['a', 'Joint conique usé', C.accent], ['b', 'Corps du siphon fissuré', C.accent]].forEach(([k, v, col], i) => {
+      const y = 640 + i * 34;
+      mono(lg, lx, y, k, { size: 15, w: 600, fill: col });
+      T(lg, lx + 30, y, v, { ff: SANS, w: 600, size: 20, fill: C.ink });
+    });
+    line(lg, lx, 700, 1864 - 30, 700, { stroke: C.ink, sw: 0.8, op: 0.35 });
+    [['1', 'Bonde'], ['2', 'Siphon Ø40'], ['3', 'Écrou et joint de sortie'], ['4', 'Évacuation Ø40']].forEach(([k, v], i) => {
+      const y = 732 + i * 30;
+      mono(lg, lx, y, k, { size: 15, w: 600, fill: k === '3' ? C.accent : C.ink });
+      T(lg, lx + 30, y, v, { ff: SANS, w: 500, size: 19, fill: C.ink });
+    });
+
+    cartouche(1330, 874, 534, 150, {
+      logoW: 172, k1: 'DOSSIER', v1: 'Appt 3B — Fuite sous évier',
+      row2: [['PHASE', '02 · Comprendre', 250], ['ÉCHELLE', '1:10', 100], ['INDICE', 'A · à valider', 184]],
+      phase: 2, phaseW: 250, status: 'Scénario de démonstration',
+    });
+  }
+
+  // ================================================================== 05 — LA PROMESSE (16:9, tirage bleu)
+  function promesse() {
+    paper();
+    // la coupe, en fantôme, comme sur un tirage
+    const gc = el('clipPath', { id: 'ghostClip' }, defs);
+    rect(gc, 1130, 56, W - 1186, H - 112, { fill: '#fff' });
+    const ghost = el('g', { 'clip-path': 'url(#ghostClip)' }, svg);
+    sinkSection(ghost, 1180, 930, 0.9, { id: 'g', op: 0.16, ink: LINE, grey: LINE, bg: 'transparent', lw: 1.1 });
+    sheetFrame(8, 5);
+    const lines = [
+      ['Un passage.', '<tspan fill="#FF8A4C" font-weight="700">OBJECTIF</tspan> · RÉPARER DÈS LA PREMIÈRE VISITE'],
+      ['Un prix.', 'ANNONCÉ AVANT L’INTERVENTION'],
+      ['Un rapport.', 'TRANSMIS AU GESTIONNAIRE'],
+    ];
+    lines.forEach(([big, lab], i) => {
+      const base = 356 + i * 214;
+      const t = T(svg, 150, base, big, { ff: COND, w: 700, size: 176, ls: -2 });
+      const w = t.getComputedTextLength();
+      const yC = base - 150;
+      // cote qui « mesure » la phrase
+      line(svg, 150, yC + 16, 150, yC - 8, { stroke: LINE, sw: 0.9 });
+      line(svg, 150 + w, yC + 16, 150 + w, yC - 8, { stroke: LINE, sw: 0.9 });
+      line(svg, 136, yC, 164 + w, yC, { stroke: LINE, sw: 1 });
+      for (const x of [150, 150 + w]) line(svg, x - 6, yC + 6, x + 6, yC - 6, { stroke: LINE, sw: 2 });
+      mono(svg, 150 + 4, yC - 12, '', { size: 17, fill: 'rgba(244,246,250,.82)', ls: 2.2, html: true }).innerHTML = lab;
+      balloon(svg, 98, base - 58, i + 1, { color: LINE, fill: '#18407C' });
+    });
+    mono(svg, 150, 928, 'NOTA 1 — « Un passage » est un objectif, mesuré dossier par dossier : certaines pannes', { size: 16, fill: 'rgba(244,246,250,.7)', ls: 0.8 });
+    mono(svg, 150, 954, 'demandent une pièce spécifique, un devis ou un second passage.', { size: 16, fill: 'rgba(244,246,250,.7)', ls: 0.8 });
+    const g = cartouche(1330, 874, 534, 150, {
+      logoW: 172, k1: 'SERVICES', v1: 'Roger Dépanne · Roger Répare',
+      row2: [['CIBLE', 'Gestion locative', 190], ['ZONE', '', 344]],
+      status: 'Indice A · proposition à valider · ne pas diffuser',
+    });
+    // zone avec exposants
+    const z = T(g, 1330 + 190 + 12, 874 + 150 * 0.7 - 9, '', { ff: SANS, w: 600, size: 17 });
+    z.innerHTML = 'Paris 12<tspan baseline-shift="super" font-size="11">e</tspan> et 13<tspan baseline-shift="super" font-size="11">e</tspan> · Vincennes · Saint-Mandé';
+    fit(z, 344 - 22);
+  }
+
+  // ================================================================== 03 — PRÉPARER (9:16)
+  function preparer() {
+    paper();
+    sheetFrame(4, 8);
+    rect(svg, 112, 132, 12, 12, { fill: C.blue });
+    mono(svg, 136, 143, 'PHASE 03 / 05', { size: 19, fill: C.ink, ls: 2.6 });
+    T(svg, 102, 300, 'Préparer', { ff: COND, w: 700, size: 170, ls: -2 });
+    T(svg, 110, 370, 'Les bonnes pièces.', { ff: SANS, w: 500, size: 42 });
+    T(svg, 110, 422, 'Le prix annoncé.', { ff: SANS, w: 500, size: 42 });
+
+    // vue éclatée du siphon neuf, le long de son axe
+    const ax = 330, g = el('g', {}, svg);
+    const tint = 'rgba(31,79,166,.08)';
+    line(g, ax, 520, ax, 1150, { stroke: C.grey, sw: 1.1, dash: AXIS });
+    mono(g, 110, 500, 'VUE ÉCLATÉE · SIPHON NEUF', { size: 14 });
+    const parts = [];
+    // 1 écrou de raccord (hexagonal)
+    const nut = (y, w, h) => {
+      rect(g, ax - w / 2, y, w, h, { fill: tint, stroke: C.blue, sw: 2.2, rx: 3 });
+      line(g, ax - w / 6, y, ax - w / 6, y + h, { stroke: C.blue, sw: 1.3 });
+      line(g, ax + w / 6, y, ax + w / 6, y + h, { stroke: C.blue, sw: 1.3 });
+    };
+    nut(540, 104, 46); parts.push([ax + 52, 563, 1, 'Écrou de raccord', 'Ø40']);
+    // 2 joint conique
+    el('polygon', { points: `${ax - 40},616 ${ax + 40},616 ${ax + 28},640 ${ax - 28},640`, fill: C.blue }, g);
+    parts.push([ax + 40, 628, 2, 'Joint conique', 'NEUF']);
+    // 3 corps du siphon + embout de sortie
+    el('path', { d: `M${ax - 30},690 L${ax + 30},690 L${ax + 30},730 L${ax + 62},730 Q${ax + 70},730 ${ax + 70},740 L${ax + 70},906 Q${ax + 70},930 ${ax + 46},930 L${ax - 46},930 Q${ax - 70},930 ${ax - 70},906 L${ax - 70},740 Q${ax - 70},730 ${ax - 62},730 L${ax - 30},730 Z`, fill: tint, stroke: C.blue, 'stroke-width': 2.2 }, g);
+    rect(g, ax + 70, 776, 92, 50, { fill: tint, stroke: C.blue, sw: 2.2 });
+    for (const x of [ax + 118, ax + 128, ax + 138, ax + 148]) line(g, x, 776, x - 6, 826, { stroke: C.blue, sw: 1 });
+    line(g, ax - 40, 745, ax - 40, 915, { stroke: C.blue, sw: 1, op: 0.45 });
+    line(g, ax + 40, 745, ax + 40, 915, { stroke: C.blue, sw: 1, op: 0.45 });
+    line(g, ax + 70, 801, ax + 200, 801, { stroke: C.grey, sw: 1.1, dash: AXIS });
+    parts.push([ax + 70, 860, 3, 'Corps de siphon', 'PVC · SORTIE Ø40']);
+    // 4 joint plat
+    rect(g, ax - 62, 982, 124, 12, { fill: C.blue });
+    parts.push([ax + 62, 988, 4, 'Joint plat', 'NEUF']);
+    // 5 culot
+    rect(g, ax - 74, 1042, 148, 70, { fill: tint, stroke: C.blue, sw: 2.2, rx: 6 });
+    for (let i = 0; i < 9; i++) line(g, ax - 60 + i * 15, 1054, ax - 60 + i * 15, 1100, { stroke: C.blue, sw: 1.1, op: 0.6 });
+    parts.push([ax + 74, 1077, 5, 'Culot démontable', 'NETTOYAGE']);
+    // flèches d'éclatement
+    for (const y of [590, 662, 956, 1016]) {
+      el('path', { d: `M${ax - 118},${y - 12} L${ax - 118},${y + 12} M${ax - 124},${y - 5} L${ax - 118},${y - 13} L${ax - 112},${y - 5} M${ax - 124},${y + 5} L${ax - 118},${y + 13} L${ax - 112},${y + 5}`, fill: 'none', stroke: C.grey, 'stroke-width': 1.3 }, g);
+    }
+    parts.forEach(([x, y, n, name, sub]) => {
+      const bx = 610;
+      leader(g, [[x, y], [bx - 20, y]], { color: C.ink });
+      balloon(g, bx, y, n, { r: 19, size: 17 });
+      T(g, bx + 36, y + 2, name, { ff: SANS, w: 600, size: 29, db: 'central' });
+      mono(g, bx + 36, y + 32, sub, { size: 13 });
+    });
+
+    // nomenclature
+    const ty = 1200, tx = 110, tw = 860;
+    T(svg, tx, ty, 'NOMENCLATURE', { ff: COND, w: 700, size: 30, ls: 1.5 });
+    mono(svg, tx + 196, ty - 2, 'PRÉPARÉE AVANT LE DÉPART', { size: 13 });
+    const cols = [[tx, 'REP.'], [tx + 76, 'DÉSIGNATION'], [tx + 470, 'QTÉ'], [tx + 560, 'ORIGINE']];
+    line(svg, tx, ty + 22, tx + tw, ty + 22, { stroke: C.ink, sw: 2 });
+    cols.forEach(([x, k]) => mono(svg, x, ty + 50, k, { size: 12.5 }));
+    line(svg, tx, ty + 64, tx + tw, ty + 64, { stroke: C.ink, sw: 1 });
+    [['1–5', 'Siphon PVC Ø40, complet', '1', 'Identifié au dossier'], ['2, 4', 'Joints conique et plat', '2', 'Identifiés au dossier'], ['—', 'Pièces courantes', '—', 'Stock du véhicule']].forEach((r, i) => {
+      const y = ty + 64 + (i + 1) * 58;
+      mono(svg, cols[0][0], y - 21, r[0], { size: 15, fill: C.ink, w: 600 });
+      T(svg, cols[1][0], y - 20, r[1], { ff: SANS, w: 500, size: 25 });
+      T(svg, cols[2][0], y - 20, r[2], { ff: SANS, w: 600, size: 25 });
+      T(svg, cols[3][0], y - 20, r[3], { ff: SANS, w: 500, size: 23, fill: i < 2 ? C.blue : C.ink, maxW: 290 });
+      line(svg, tx, y, tx + tw, y, { stroke: C.ink, sw: i === 2 ? 2 : 0.8, op: i === 2 ? 1 : 0.35 });
+    });
+
+    // prix
+    const py = 1512;
+    rect(svg, tx, py, tw, 150, { fill: C.bg, stroke: C.ink, sw: 1.6 });
+    mono(svg, tx + 24, py + 36, 'PRIX', { size: 13 });
+    T(svg, tx + 24, py + 82, 'Annoncé au gestionnaire,', { ff: SANS, w: 700, size: 33 });
+    T(svg, tx + 24, py + 122, 'avant l’intervention.', { ff: SANS, w: 700, size: 33 });
+    const st = el('g', { transform: `translate(${tx + tw - 150} ${py + 76}) rotate(-8)` }, svg);
+    rect(st, -104, -36, 208, 72, { stroke: C.blue, sw: 3, rx: 6 });
+    rect(st, -96, -28, 192, 56, { stroke: C.blue, sw: 1, rx: 4 });
+    T(st, 0, 1, 'BORDEREAU', { ff: COND, w: 800, size: 30, ls: 3, anchor: 'middle', db: 'central', fill: C.blue });
+
+    cartouche(56, 1720, 968, 144, {
+      logoW: 190, k1: 'DOSSIER', v1: 'Appt 3B — Fuite sous évier',
+      row2: [['PHASE', '03 · Préparer', 360], ['ÉCHELLE', 'Sans', 200], ['INDICE', 'A · à valider', 408]],
+      phase: 3, phaseW: 360, status: 'Scénario de démonstration · ne pas diffuser',
+    });
+  }
+
+  ({ comprendre, promesse, preparer })[F]();
+  ready();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "roger-feuille-de-route-design",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ROGER — feuille de route design du film 3 : trois pistes « pro & bâtiment » en images-clés 16:9 et 9:16 (document interne)",
+  "scripts": {
+    "fonts": "python3 frames/fonts.py",
+    "frames": "node render-frames.mjs",
+    "build": "python3 build.py"
+  },
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}

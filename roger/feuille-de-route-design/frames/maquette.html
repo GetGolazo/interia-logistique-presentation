@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Piste 3 — Maquette</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  html, body { margin: 0; background: #000; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="kit.js"></script>
+<script>
+(async function () {
+  'use strict';
+  const { el, ready, frame } = KIT;
+  const F = frame || 'panne';
+  const V = F === 'panne';
+  const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+
+  // Piste 3 — « Maquette » : l'immeuble et le quartier en axonométrie, comme une maquette d'architecte.
+  const BG1 = '#E8EBED', BG2 = '#D9DEE2', INK = '#1E2329', MUTED = '#66707A', ORANGE = '#FF6A2B', BLUE = '#2E5BD8', POCHE = '#2B3137';
+  const WHITE = { top: '#FBFBF9', left: '#ECEBE6', right: '#D8D6CF' };
+  const ZINC = { top: '#A7B1BB', left: '#8F9AA6', right: '#76828F' };
+  const GLASS = { left: '#B3C2CF', right: '#9EAFBF' };
+  const SANS = 'Instrument Sans', MONO = 'Martian Mono';
+  await Promise.all(['700 80px "Instrument Sans"', '600 30px "Instrument Sans"', '500 30px "Instrument Sans"', '400 14px "Martian Mono"', '500 14px "Martian Mono"'].map((f) => document.fonts.load(f)));
+
+  const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` }, document.getElementById('stage'));
+  const defs = el('defs', {}, svg);
+  const lg = el('linearGradient', { id: 'bg', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+  el('stop', { offset: 0, 'stop-color': BG1 }, lg); el('stop', { offset: 1, 'stop-color': BG2 }, lg);
+  el('rect', { width: W, height: H, fill: 'url(#bg)' }, svg);
+
+  // ------------------------------------------------------------------ projection axonométrique
+  let S = 33, OX = W / 2, OY = H / 2;
+  const P = (x, y, z) => [OX + (x - y) * 0.8660254 * S, OY + (x + y) * 0.5 * S - z * S];
+  const pts = (arr) => arr.map((q) => P(...q).map((v) => v.toFixed(1)).join(',')).join(' ');
+  const poly = (p, arr, a = {}) => el('polygon', Object.assign({ points: pts(arr), 'stroke-linejoin': 'round' }, a), p);
+  const EDGE = '#A29E95';
+  function box(p, x0, y0, z0, x1, y1, z1, c = WHITE, o = {}) {
+    const sw = o.sw === undefined ? 0.9 : o.sw, st = o.stroke || EDGE;
+    if (!o.noLeft) poly(p, [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], { fill: c.left, stroke: st, 'stroke-width': sw });
+    if (!o.noRight) poly(p, [[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], { fill: c.right, stroke: st, 'stroke-width': sw });
+    if (!o.noTop) poly(p, [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], { fill: c.top, stroke: st, 'stroke-width': sw });
+  }
+  // fenêtres sur la face +y (façade gauche) ou +x (façade droite)
+  const winY = (p, y, xa, xb, za, zb, fill = GLASS.left) => poly(p, [[xa, y, za], [xb, y, za], [xb, y, zb], [xa, y, zb]], { fill, stroke: '#8E9AA6', 'stroke-width': 0.6 });
+  const winX = (p, x, ya, yb, za, zb, fill = GLASS.right) => poly(p, [[x, ya, za], [x, yb, za], [x, yb, zb], [x, ya, zb]], { fill, stroke: '#7F8C99', 'stroke-width': 0.6 });
+  const line3 = (p, a, b, o = {}) => { const [x1, y1] = P(...a), [x2, y2] = P(...b); return el('line', { x1, y1, x2, y2, stroke: o.stroke || INK, 'stroke-width': o.sw || 1, 'stroke-dasharray': o.dash, opacity: o.op, 'stroke-linecap': 'round' }, p); };
+  function balconyY(p, y, x0, x1, z) {
+    box(p, x0, y, z, x1, y + 0.45, z + 0.14, WHITE, { sw: 0.6 });
+    for (let x = x0 + 0.15; x < x1; x += 0.32) line3(p, [x, y + 0.42, z + 0.14], [x, y + 0.42, z + 0.95], { stroke: '#3A4047', sw: 0.8 });
+    line3(p, [x0, y + 0.42, z + 0.95], [x1, y + 0.42, z + 0.95], { stroke: '#3A4047', sw: 1.4 });
+  }
+  function balconyX(p, x, y0, y1, z) {
+    box(p, x, y0, z, x + 0.45, y1, z + 0.14, WHITE, { sw: 0.6 });
+    for (let y = y0 + 0.15; y < y1; y += 0.32) line3(p, [x + 0.42, y, z + 0.14], [x + 0.42, y, z + 0.95], { stroke: '#3A4047', sw: 0.8 });
+    line3(p, [x + 0.42, y0, z + 0.95], [x + 0.42, y1, z + 0.95], { stroke: '#3A4047', sw: 1.4 });
+  }
+  const T = (p, x, y, s, o = {}) => el('text', { x, y, 'font-family': o.ff || SANS, 'font-size': o.size || 20, 'font-weight': o.w || 500, fill: o.fill || INK, 'letter-spacing': o.ls || 0, 'text-anchor': o.anchor, 'font-stretch': o.stretch, opacity: o.op, text: s }, p);
+  const monoT = (p, x, y, s, o = {}) => T(p, x, y, s, Object.assign({ ff: MONO, size: 13, w: 500, ls: 1.2, fill: MUTED }, o));
+
+  // façades d'un étage courant : 4 travées sur chaque face
+  function floorWindows(p, x0, x1, y0, y1, z, h, o = {}) {
+    const bays = 4, ww = 1.15;
+    for (let i = 0; i < bays; i++) {
+      const cx = x0 + ((x1 - x0) * (i + 0.5)) / bays;
+      if (!o.skipY) winY(p, y1, cx - ww / 2, cx + ww / 2, z + (o.french ? 0.05 : 0.7), z + h - 0.55);
+      const cy = y0 + ((y1 - y0) * (i + 0.5)) / bays;
+      if (!o.skipX) winX(p, x1, cy - ww / 2, cy + ww / 2, z + (o.french ? 0.05 : 0.7), z + h - 0.55);
+    }
+  }
+  // toit à la Mansart en zinc, lucarnes et souches de cheminée
+  function mansard(p, x0, y0, x1, y1, zb, h, inset) {
+    const zt = zb + h, i = inset;
+    poly(p, [[x0, y1, zb], [x1, y1, zb], [x1 - i, y1 - i, zt], [x0 + i, y1 - i, zt]], { fill: ZINC.left, stroke: '#6D7884', 'stroke-width': 0.8 });
+    poly(p, [[x1, y0, zb], [x1, y1, zb], [x1 - i, y1 - i, zt], [x1 - i, y0 + i, zt]], { fill: ZINC.right, stroke: '#6D7884', 'stroke-width': 0.8 });
+    poly(p, [[x0 + i, y0 + i, zt], [x1 - i, y0 + i, zt], [x1 - i, y1 - i, zt], [x0 + i, y1 - i, zt]], { fill: ZINC.top, stroke: '#6D7884', 'stroke-width': 0.8 });
+    // joints de zinc
+    for (let k = 1; k < 12; k++) {
+      const x = x0 + ((x1 - x0) * k) / 12;
+      const xt = x0 + i + ((x1 - x0 - 2 * i) * k) / 12;
+      line3(p, [x, y1, zb], [xt, y1 - i, zt], { stroke: '#7E8995', sw: 0.6 });
+      const y = y0 + ((y1 - y0) * k) / 12, yt = y0 + i + ((y1 - y0 - 2 * i) * k) / 12;
+      line3(p, [x1, y, zb], [x1 - i, yt, zt], { stroke: '#67737F', sw: 0.6 });
+    }
+    // lucarnes
+    for (let k = 0; k < 3; k++) {
+      const cx = x0 + ((x1 - x0) * (k + 0.5)) / 3, yy = y1 - i * 0.45;
+      box(p, cx - 0.55, yy - 0.7, zb + 0.35, cx + 0.55, yy, zb + h * 0.62, WHITE, { sw: 0.6 });
+      winY(p, yy, cx - 0.33, cx + 0.33, zb + 0.55, zb + h * 0.55);
+      const cy = y0 + ((y1 - y0) * (k + 0.5)) / 3, xx = x1 - i * 0.45;
+      box(p, xx - 0.7, cy - 0.55, zb + 0.35, xx, cy + 0.55, zb + h * 0.62, WHITE, { sw: 0.6 });
+      winX(p, xx, cy - 0.33, cy + 0.33, zb + 0.55, zb + h * 0.55);
+    }
+    // souches de cheminée
+    for (const [cx, cy] of [[x0 + 2.2, y0 + i + 0.2], [x0 + 6.2, y0 + i + 0.2]]) {
+      box(p, cx, cy, zt, cx + 1.6, cy + 0.6, zt + 1.3, { top: '#E8E2D8', left: '#DCD3C5', right: '#C7BDAE' }, { sw: 0.6 });
+      for (let k = 0; k < 4; k++) box(p, cx + 0.15 + k * 0.38, cy + 0.15, zt + 1.3, cx + 0.4 + k * 0.38, cy + 0.42, zt + 1.62, { top: '#C98A63', left: '#B7744E', right: '#9E6240' }, { sw: 0.4 });
+    }
+  }
+
+  // ------------------------------------------------------------------ immeuble d'angle (x, y ∈ [0, 11])
+  const B = 11, RDC = 4.2, FL = 3.1;
+  const zF = (n) => RDC + (n - 1) * FL; // plancher de l'étage n
+  function buildingLower(p, cutFloor, cutH) {
+    // rez-de-chaussée : vitrines
+    box(p, 0, 0, 0, B, B, RDC, WHITE);
+    for (let i = 0; i < 4; i++) {
+      const cx = (B * (i + 0.5)) / 4;
+      winY(p, B, cx - 0.95, cx + 0.95, 0.25, RDC - 0.7, '#8FA1B2');
+      winX(p, B, cx - 0.95, cx + 0.95, 0.25, RDC - 0.7, '#7F92A4');
+    }
+    for (let z = 0.5; z < RDC; z += 0.5) { line3(p, [0, B, z], [B, B, z], { stroke: '#D5D2CA', sw: 0.5 }); line3(p, [B, 0, z], [B, B, z], { stroke: '#C4C1B8', sw: 0.5 }); }
+    for (let n = 1; n < cutFloor; n++) {
+      box(p, 0, 0, zF(n), B, B, zF(n) + FL, WHITE, { noTop: true });
+      floorWindows(p, 0, B, 0, B, zF(n), FL, { french: n === 2 });
+      if (n === 2) { balconyY(p, B, 0.3, B - 0.3, zF(2)); balconyX(p, B, 0.3, B - 0.3, zF(2)); }
+    }
+  }
+
+  // plan de l'étage coupé à hauteur d'appui : murs en poché, mobilier en volumes blancs
+  function cutPlan(p, z0, hCut) {
+    const z1 = z0 + hCut, t = 0.38;
+    // plancher (parquet)
+    poly(p, [[0, 0, z0], [B, 0, z0], [B, B, z0], [0, B, z0]], { fill: '#E6D2B0', stroke: EDGE, 'stroke-width': 0.8 });
+    for (let k = 1; k < 22; k++) line3(p, [k * 0.5, 0, z0], [k * 0.5, B, z0], { stroke: '#D8C29C', sw: 0.5 });
+    const walls = [];
+    const wall = (x0, y0, x1, y1) => walls.push([x0, y0, x1, y1]);
+    // murs extérieurs avec baies (fenêtres coupées)
+    const openY = [], openX = [];
+    for (let i = 0; i < 4; i++) { const c = (B * (i + 0.5)) / 4; openY.push([c - 0.6, c + 0.6]); openX.push([c - 0.6, c + 0.6]); }
+    const run = (a, b, holes, mk) => { let s = a; for (const [h0, h1] of holes) { if (h0 > s) mk(s, h0); s = h1; } if (b > s) mk(s, b); };
+    wall(0, 0, B, t); wall(0, 0, t, B);                                  // murs du fond
+    run(0, B, openY, (s, e) => wall(s, B - t, e, B));                     // façade +y
+    run(0, B, openX, (s, e) => wall(B - t, s, B, e));                     // façade +x
+    wall(5.4, t, 5.6, 3.4);                                              // cage d'escalier
+    wall(3.6, 3.4, 7.4, 3.6);
+    wall(5.4, 3.6, 5.6, B - t);                                          // mur mitoyen 3A / 3B
+    wall(5.6, 6.2, 7.6, 6.4); wall(8.8, 6.2, B - t, 6.4);                // 3B : cuisine / chambre (porte)
+    wall(t, 6.2, 2.2, 6.4); wall(3.4, 6.2, 5.4, 6.4);                    // 3A
+    // mobilier (volumes blancs bas), dessiné de l'arrière vers l'avant
+    const furn = [
+      [6.0, 0.45, 10.55, 1.05, 0.9, 'counter'], [0.6, 0.45, 3.2, 1.3, 0.45, 'sofa'], [7.0, 2.6, 8.6, 3.6, 0.75, 'table'],
+      [1.2, 7.4, 3.2, 9.6, 0.5, 'bed'], [8.2, 7.6, 10.2, 9.8, 0.5, 'bed'],
+    ];
+    const items = walls.map((w) => ({ k: 'wall', w, d: w[0] + w[1] + w[2] + w[3] })).concat(furn.map((f) => ({ k: 'furn', f, d: f[0] + f[1] + f[2] + f[3] })));
+    items.sort((a, b) => a.d - b.d);
+    // escalier
+    for (let k = 0; k < 7; k++) poly(p, [[3.8 + k * 0.22, 0.5, z0 + 0.02], [4.0 + k * 0.22, 0.5, z0 + 0.02], [4.0 + k * 0.22, 3.2, z0 + 0.02], [3.8 + k * 0.22, 3.2, z0 + 0.02]], { fill: k % 2 ? '#D9CBB0' : '#CDBd9F', stroke: 'none' });
+    for (const it of items) {
+      if (it.k === 'wall') { const [x0, y0, x1, y1] = it.w; box(p, x0, y0, z0, x1, y1, z1, { top: POCHE, left: '#E9E6DF', right: '#D5D2CA' }, { sw: 0.5, stroke: '#9C988F' }); }
+      else { const [x0, y0, x1, y1, h] = it.f; box(p, x0, y0, z0, x1, y1, z0 + h, WHITE, { sw: 0.6 }); if (it.f[5] === 'counter') sink(p, z0 + h); }
+    }
+  }
+  let sinkPt = null;
+  function sink(p, zc) {
+    poly(p, [[8.0, 0.55, zc], [9.0, 0.55, zc], [9.0, 0.95, zc], [8.0, 0.95, zc]], { fill: '#AFBAC4', stroke: '#8C98A4', 'stroke-width': 0.6 });
+    box(p, 8.45, 0.5, zc, 8.55, 0.58, zc + 0.35, { top: '#C9D1D8', left: '#B6C0C9', right: '#9FAAB5' }, { sw: 0.3 });
+    sinkPt = [8.5, 0.75, zc];
+  }
+
+  function buildingUpper(p, z0, lift) {
+    const zb = z0 + lift;
+    box(p, 0, 0, zb, B, B, zb + FL, WHITE);
+    floorWindows(p, 0, B, 0, B, zb, FL, { french: true });
+    balconyY(p, B, 0.3, B - 0.3, zb); balconyX(p, B, 0.3, B - 0.3, zb);
+    box(p, -0.2, -0.2, zb + FL, B + 0.2, B + 0.2, zb + FL + 0.35, WHITE, { sw: 0.7 });
+    mansard(p, 0, 0, B, B, zb + FL + 0.35, 3.6, 1.6);
+    return zb;
+  }
+
+  // ================================================================== 01 — LA PANNE (9:16) : axonométrie éclatée
+  function panne() {
+    S = 33; OX = 548; OY = 1226;
+    const g = el('g', {}, svg);
+    // sol : trottoirs, chaussée
+    poly(g, [[-14, -14, 0], [17, -14, 0], [17, 17, 0], [-14, 17, 0]], { fill: '#CDD2D6' });
+    poly(g, [[-14, -14, 0], [13.4, -14, 0], [13.4, 13.4, 0], [-14, 13.4, 0]], { fill: '#E1E4E6', stroke: '#C2C8CD', 'stroke-width': 1 });
+    for (let k = 0; k < 6; k++) { const x = 14.4 + k * 0.001; poly(g, [[13.9, -12 + k * 2.2, 0.01], [16.4, -12 + k * 2.2, 0.01], [16.4, -11 + k * 2.2, 0.01], [13.9, -11 + k * 2.2, 0.01]], { fill: '#F2F3F4' }); }
+    // voisins, en retrait (contexte)
+    box(g, -12, 0, 0, -0.01, B, 19.2, { top: '#F4F4F2', left: '#E4E3DE', right: '#D3D1CA' }, { sw: 0.6 });
+    for (let n = 0; n < 5; n++) for (let i = 0; i < 4; i++) { const cx = -12 + (12 * (i + 0.5)) / 4; winY(g, B, cx - 0.55, cx + 0.55, 4.9 + n * FL, 4.9 + n * FL + 1.9, '#C6D0D9'); }
+    box(g, 0, -12, 0, B, -0.01, 18.4, { top: '#F4F4F2', left: '#E4E3DE', right: '#D3D1CA' }, { sw: 0.6 });
+    for (let n = 0; n < 5; n++) for (let i = 0; i < 4; i++) { const cy = -12 + (12 * (i + 0.5)) / 4; winX(g, B, cy - 0.55, cy + 0.55, 4.9 + n * FL, 4.9 + n * FL + 1.9, '#B5C1CC'); }
+    // l'immeuble du logement : bas, étage 3 coupé, haut soulevé
+    buildingLower(g, 3);
+    const z3 = zF(3);
+    cutPlan(g, z3, 1.1);
+    const lift = 5.6;
+    // lignes de rappel de l'éclatement
+    for (const [x, y] of [[0, B], [B, B], [B, 0]]) line3(g, [x, y, z3 + 1.1], [x, y, zF(4) + lift], { stroke: '#7D8791', sw: 1.2, dash: '6 6' });
+    buildingUpper(g, zF(4), lift);
+
+    // la fuite : anneaux au sol + goutte
+    const [sx, sy] = P(...sinkPt);
+    const fx = el('g', {}, svg);
+    for (const [r, o] of [[16, 0.9], [30, 0.55], [46, 0.28]]) el('ellipse', { cx: sx + 6, cy: sy + 20, rx: r * 1.1, ry: r * 0.62, fill: 'none', stroke: ORANGE, 'stroke-width': 2.4, opacity: o }, fx);
+    const dx = sx + 6, dy = sy - 64;
+    el('path', { d: `M${dx},${dy - 30} C${dx + 19},${dy - 4} ${dx + 17},${dy + 16} ${dx},${dy + 16} C${dx - 17},${dy + 16} ${dx - 19},${dy - 4} ${dx},${dy - 30}Z`, fill: ORANGE }, fx);
+    el('line', { x1: dx, y1: dy + 22, x2: dx, y2: sy - 4, stroke: ORANGE, 'stroke-width': 2, 'stroke-dasharray': '3 4' }, fx);
+    // étiquette
+    const lx = 812, ly = 1068;
+    el('polyline', { points: `${dx + 20},${dy + 4} ${lx - 18},${ly + 40} ${lx},${ly + 40}`, fill: 'none', stroke: INK, 'stroke-width': 1.3 }, fx);
+    el('circle', { cx: dx + 20, cy: dy + 4, r: 3.5, fill: INK }, fx);
+    const card = el('g', { transform: `translate(${lx} ${ly})` }, fx);
+    el('rect', { x: 0, y: 0, width: 240, height: 132, rx: 4, fill: '#FFFFFF', stroke: INK, 'stroke-width': 1.3 }, card);
+    el('rect', { x: 0, y: 0, width: 240, height: 34, rx: 4, fill: INK }, card);
+    el('rect', { x: 0, y: 20, width: 240, height: 14, fill: INK }, card);
+    monoT(card, 14, 22, '', { fill: '#fff', size: 12.5 }).innerHTML = 'APPT 3B · 3<tspan baseline-shift="super" font-size="8.5">E</tspan> ÉTAGE';
+    T(card, 14, 72, 'Fuite sous l’évier', { size: 24, w: 600 });
+    monoT(card, 14, 106, 'MARDI · 08:15', { size: 12.5, fill: ORANGE, w: 500 });
+    // titre
+    monoT(svg, 80, 150, '01 — LA PANNE', { size: 20, fill: INK, ls: 3 });
+    T(svg, 72, 270, 'Une panne', { size: 118, w: 700, ls: -3 });
+    T(svg, 72, 392, 'simple ?', { size: 118, w: 700, ls: -3 });
+    // repères de maquette
+    monoT(svg, 80, 1720, 'AXONOMÉTRIE ÉCLATÉE · ÉTAGE 3 COUPÉ À 1,10 M', { size: 14 });
+    monoT(svg, 80, 1748, 'MAQUETTE DE PRINCIPE · SCÉNARIO DE DÉMONSTRATION', { size: 14 });
+    monoT(svg, 80, 1776, 'PROTOTYPE INTERNE — NE PAS DIFFUSER', { size: 14, fill: ORANGE });
+  }
+
+  // ================================================================== 02 — LES ALLERS-RETOURS (16:9) : le quartier
+  function allers() {
+    S = 15.5; OX = 1270; OY = 318;
+    const g = el('g', {}, svg);
+    const N = 40;
+    // socle de la maquette et rues
+    box(g, -1.5, -1.5, -1.4, N + 1.5, N + 1.5, 0, { top: '#E6E9EC', left: '#C9CED3', right: '#B8BEC4' }, { sw: 0.8, stroke: '#AEB4BA' });
+    for (const [a, b] of [[12, 15], [27, 30]]) {
+      poly(g, [[a, -1.5, 0.01], [b, -1.5, 0.01], [b, N + 1.5, 0.01], [a, N + 1.5, 0.01]], { fill: '#D2D7DB' });
+      poly(g, [[-1.5, a, 0.01], [N + 1.5, a, 0.01], [N + 1.5, b, 0.01], [-1.5, b, 0.01]], { fill: '#D2D7DB' });
+    }
+    // îlots de contexte, bas et discrets
+    const KEY = {
+      art: { x0: 1.5, y0: 17, x1: 9.5, y1: 25, h: 4, label: 'ARTISAN' },
+      log: { x0: 17, y0: 17, x1: 25, y1: 25, h: 15, label: 'LOGEMENT' },
+      mag: { x0: 32, y0: 17.5, x1: 39.5, y1: 25, h: 4.5, label: 'MAGASIN' },
+      ges: { x0: 31.5, y0: 1.5, x1: 39.5, y1: 9.5, h: 11, label: 'GESTIONNAIRE' },
+    };
+    const lots = [[0, 11], [16, 26], [31, 40]];
+    const hs = [6, 8, 5, 7, 9, 6, 7, 5, 8, 6, 7, 9, 5, 8, 6, 7, 6, 8, 5, 7, 9, 6, 7, 5, 8, 6, 7, 5, 9, 6, 8, 7, 5, 6, 7, 8];
+    let hi = 0;
+    const blocks = [];
+    for (const [xa, xb] of lots) for (const [ya, yb] of lots) for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      const x0 = xa + ((xb - xa) * i) / 2 + 0.35, x1 = xa + ((xb - xa) * (i + 1)) / 2 - 0.35;
+      const y0 = ya + ((yb - ya) * j) / 2 + 0.35, y1 = ya + ((yb - ya) * (j + 1)) / 2 - 0.35;
+      blocks.push({ x0, y0, x1, y1, h: hs[hi++ % hs.length] * 0.9, kind: 'ctx' });
+    }
+    const inKey = (b) => Object.values(KEY).some((k) => b.x0 < k.x1 && b.x1 > k.x0 && b.y0 < k.y1 && b.y1 > k.y0);
+    const all = blocks.filter((b) => !inKey(b)).concat(Object.entries(KEY).map(([k, b]) => ({ ...b, kind: k })));
+    all.sort((a, b) => (a.x0 + a.y0 + a.x1 + a.y1) - (b.x0 + b.y0 + b.x1 + b.y1));
+    for (const b of all) {
+      if (b.kind === 'ctx') { box(g, b.x0, b.y0, 0, b.x1, b.y1, b.h, { top: '#F6F6F4', left: '#E7E6E1', right: '#D6D4CD' }, { sw: 0.5, stroke: '#C2BFB7' }); continue; }
+      if (b.kind === 'log') {
+        const zb = b.h - 3;
+        box(g, b.x0, b.y0, 0, b.x1, b.y1, zb, WHITE, { sw: 0.8 });
+        for (let n = 0; n < 4; n++) for (let i = 0; i < 4; i++) {
+          const z = 1.2 + n * 2.9;
+          const cx = b.x0 + ((b.x1 - b.x0) * (i + 0.5)) / 4, cy = b.y0 + ((b.y1 - b.y0) * (i + 0.5)) / 4;
+          winY(g, b.y1, cx - 0.5, cx + 0.5, z, z + 1.6, n === 2 && i === 2 ? ORANGE : GLASS.left);
+          winX(g, b.x1, cy - 0.5, cy + 0.5, z, z + 1.6);
+        }
+        poly(g, [[b.x0, b.y1, zb], [b.x1, b.y1, zb], [b.x1 - 1.2, b.y1 - 1.2, zb + 3], [b.x0 + 1.2, b.y1 - 1.2, zb + 3]], { fill: ZINC.left, stroke: '#6D7884', 'stroke-width': 0.8 });
+        poly(g, [[b.x1, b.y0, zb], [b.x1, b.y1, zb], [b.x1 - 1.2, b.y1 - 1.2, zb + 3], [b.x1 - 1.2, b.y0 + 1.2, zb + 3]], { fill: ZINC.right, stroke: '#6D7884', 'stroke-width': 0.8 });
+        poly(g, [[b.x0 + 1.2, b.y0 + 1.2, zb + 3], [b.x1 - 1.2, b.y0 + 1.2, zb + 3], [b.x1 - 1.2, b.y1 - 1.2, zb + 3], [b.x0 + 1.2, b.y1 - 1.2, zb + 3]], { fill: ZINC.top, stroke: '#6D7884', 'stroke-width': 0.8 });
+      } else if (b.kind === 'art') {
+        box(g, b.x0, b.y0, 0, b.x1, b.y1, b.h, WHITE, { sw: 0.8 });
+        winX(g, b.x1, b.y0 + 1.2, b.y0 + 5.2, 0.05, 3, '#9AA6B1');
+        for (let z = 0.4; z < 3; z += 0.35) line3(g, [b.x1, b.y0 + 1.2, z], [b.x1, b.y0 + 5.2, z], { stroke: '#7F8B96', sw: 0.6 });
+        box(g, 10.3, 19.2, 0, 11.9, 22.4, 1.6, { top: '#FFFFFF', left: '#F1F1EF', right: '#DADAD6' }, { sw: 0.7 });
+        box(g, 10.3, 21.4, 1.6, 11.9, 22.4, 1.65, { top: '#9FB0C0', left: '#9FB0C0', right: '#9FB0C0' }, { sw: 0.4 });
+      } else if (b.kind === 'mag') {
+        box(g, b.x0, b.y0, 0, b.x1, b.y1, b.h, WHITE, { sw: 0.8 });
+        winY(g, b.y1, b.x0 + 0.8, b.x1 - 0.8, 0.2, 2.9, '#8FA1B2');
+        winX(g, b.x1, b.y0 + 0.8, b.y1 - 0.8, 0.2, 2.9, '#7F92A4');
+        box(g, b.x0 + 0.4, b.y1, 3.1, b.x1 - 0.4, b.y1 + 1.1, 3.35, { top: '#E7EBF8', left: BLUE, right: '#244AB5' }, { sw: 0.6 });
+      } else if (b.kind === 'ges') {
+        box(g, b.x0, b.y0, 0, b.x1, b.y1, b.h, WHITE, { sw: 0.8 });
+        for (let n = 0; n < 3; n++) { const z = 1 + n * 3.2; winY(g, b.y1, b.x0 + 0.6, b.x1 - 0.6, z, z + 1.7); winX(g, b.x1, b.y0 + 0.6, b.y1 - 0.6, z, z + 1.7); }
+      }
+    }
+    // trajets : des arcs qui s'empilent entre le logement et le magasin
+    const top = (k, dz = 0) => { const b = KEY[k]; return [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.h + dz]; };
+    const arcs = el('g', {}, svg);
+    const arc = (A, Bp, hArc, col, sw = 4) => {
+      const q = [];
+      for (let i = 0; i <= 48; i++) {
+        const t = i / 48;
+        q.push(P(A[0] + (Bp[0] - A[0]) * t, A[1] + (Bp[1] - A[1]) * t, A[2] + (Bp[2] - A[2]) * t + hArc * 4 * t * (1 - t)));
+      }
+      el('polyline', { points: q.map((v) => v.map((n) => n.toFixed(1)).join(',')).join(' '), fill: 'none', stroke: col, 'stroke-width': sw, 'stroke-linecap': 'round' }, arcs);
+      return P(A[0] + (Bp[0] - A[0]) * 0.5, A[1] + (Bp[1] - A[1]) * 0.5, A[2] + (Bp[2] - A[2]) * 0.5 + hArc);
+    };
+    const YEL = '#E3A900';
+    const apex = [
+      [arc(top('art', 0.2), top('log', 3.2), 10, YEL), 'PASSAGE 1 · CONSTAT', YEL, -1],
+      [arc(top('log', 3.2), top('mag', 0.2), 6, ORANGE), 'IL MANQUE UNE PIÈCE', ORANGE, 1],
+      [arc(top('mag', 0.2), top('log', 3.2), 11, ORANGE), 'PASSAGE 2', ORANGE, 1],
+      [arc(top('log', 3.2), top('mag', 0.2), 16, ORANGE), 'PAS LA BONNE RÉFÉRENCE', ORANGE, 1],
+      [arc(top('mag', 0.2), top('log', 3.2), 21, ORANGE), 'PASSAGE 3', ORANGE, 1],
+    ];
+    const chips = el('g', {}, svg);
+    apex.forEach(([[x, y], txt, col, side]) => {
+      const w = txt.length * 9.4 + 30;
+      const cx = side > 0 ? x + 14 : x - 14 - w;
+      el('circle', { cx: x, cy: y, r: 6, fill: col, stroke: '#fff', 'stroke-width': 2 }, chips);
+      el('rect', { x: cx, y: y - 14, width: w, height: 28, rx: 5, fill: '#FFFFFF', stroke: col, 'stroke-width': 1.6 }, chips);
+      monoT(chips, cx + 14, y + 5, txt, { size: 11.5, fill: INK });
+    });
+    // étiquettes des lieux
+    const tag = (k) => {
+      const b = KEY[k];
+      const [x, y] = P(b.x1, b.y1, 0);
+      const t = el('g', { transform: `translate(${x} ${y + 16})` }, svg);
+      const w = b.label.length * 11.2 + 28;
+      el('rect', { x: -w / 2, y: 0, width: w, height: 28, rx: 14, fill: INK }, t);
+      monoT(t, 0, 18.5, b.label, { anchor: 'middle', fill: '#fff', size: 12 });
+    };
+    tag('art'); tag('log'); tag('mag'); tag('ges');
+    // échanges accrochés aux lieux
+    const bubble = (k, who, txt, dx, dy) => {
+      const b = KEY[k];
+      const [x, y] = P((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.h);
+      const t = el('g', { transform: `translate(${x + dx} ${y + dy})` }, svg);
+      const w = Math.max(txt.length * 10.6, who.length * 9) + 34;
+      el('rect', { x: 0, y: 0, width: w, height: 60, rx: 12, fill: '#FFFFFF', stroke: '#C9CED3', 'stroke-width': 1 }, t);
+      monoT(t, 16, 22, who, { size: 10.5 });
+      T(t, 16, 47, txt, { size: 18.5, w: 600 });
+    };
+    bubble('ges', 'GESTIONNAIRE', 'Relance : un créneau ?', -150, -128);
+    bubble('log', 'LOCATAIRE', 'Ça goutte toujours.', -365, 239);
+    // titre et compteurs
+    monoT(svg, 90, 132, '02 — LES ALLERS-RETOURS', { size: 17, fill: INK, ls: 3 });
+    T(svg, 84, 236, 'Ce qui coûte,', { size: 92, w: 700, ls: -2.5 });
+    T(svg, 84, 334, 'c’est de revenir.', { size: 92, w: 700, ls: -2.5, fill: ORANGE });
+    const ctr = (x, lab, n, col) => { monoT(svg, x, 440, lab, { size: 13 }); T(svg, x - 4, 530, n, { size: 96, w: 700, fill: col, ls: -3 }); };
+    ctr(90, 'PASSAGES', '3', ORANGE); ctr(260, 'ÉCHANGES', '14', INK);
+    monoT(svg, 90, 1010, 'MAQUETTE DE PRINCIPE · SCÉNARIO DE DÉMONSTRATION · PROTOTYPE INTERNE — NE PAS DIFFUSER', { size: 12.5 });
+  }
+
+  ({ panne, allers })[F]();
+  ready();
+})();
+</script>
+</body>
+</html>

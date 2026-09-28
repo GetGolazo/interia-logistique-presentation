@@ -1,0 +1,421 @@
+<title>Feuille de route design ROGER</title>
+<!--FONTS-->
+<style>
+  /* Mise en page : un dossier de design. Colonne de lecture étroite, planches en pleine largeur, chaque piste traitée comme une fiche. */
+  :root {
+    --bg: #EEF0F2;
+    --surface: #FFFFFF;
+    --ink: #15181C;
+    --muted: #58616B;
+    --rule: #D3D8DE;
+    --accent: #1F4FA6;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E3EAF7;
+    --warn: #A8431A;
+    --overlay: rgba(10, 12, 15, 0.9);
+    --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --gap: clamp(0.75rem, 2vw, 1.25rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111418; --surface: #181C21; --ink: #E7EAEE; --muted: #9AA3AD; --rule: #2B3139;
+      --accent: #8FB0F0; --accent-ink: #0E1420; --accent-soft: #1B2944; --warn: #F08A5D; --overlay: rgba(0, 0, 0, 0.92);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111418; --surface: #181C21; --ink: #E7EAEE; --muted: #9AA3AD; --rule: #2B3139;
+    --accent: #8FB0F0; --accent-ink: #0E1420; --accent-soft: #1B2944; --warn: #F08A5D; --overlay: rgba(0, 0, 0, 0.92);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 1.0625rem/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 76rem; margin: 0 auto; padding-inline: clamp(1rem, 4vw, 3rem); padding-block: clamp(2rem, 6vw, 4.5rem) 3rem; }
+  .read { max-width: 44rem; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.6rem, 7vw, 4.8rem); font-weight: 800; font-stretch: 78%; line-height: 0.98; letter-spacing: -0.01em; }
+  h2 { font-size: clamp(1.9rem, 4.2vw, 3rem); font-weight: 780; font-stretch: 82%; line-height: 1.02; }
+  h3 { font-size: 1.12rem; font-weight: 700; font-stretch: 100%; line-height: 1.3; }
+  p { margin: 0; }
+  .label { font: 500 0.74rem/1.3 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .lead { font-size: clamp(1.1rem, 2vw, 1.28rem); line-height: 1.55; }
+  .muted { color: var(--muted); }
+
+  /* en-tête */
+  .head { display: grid; gap: 1.25rem; padding-bottom: clamp(2rem, 5vw, 3.5rem); }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip { display: inline-flex; align-items: center; gap: 0.45rem; border: 1px solid var(--rule); background: var(--surface); padding: 0.32rem 0.7rem; border-radius: 999px; font: 500 0.72rem/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .chip.warn { color: var(--warn); border-color: currentColor; }
+
+  /* sections */
+  section { border-top: 1px solid var(--rule); padding-block: clamp(2.5rem, 6vw, 4rem); display: grid; gap: clamp(1.5rem, 3vw, 2.25rem); }
+  .two { display: grid; gap: clamp(1.5rem, 4vw, 3rem); }
+  @media (min-width: 900px) { .two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .two > div { min-width: 0; display: grid; gap: 0.75rem; align-content: start; }
+  ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.45rem; }
+
+  /* pistes */
+  .piste-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem 1rem; }
+  .reco { background: var(--accent); color: var(--accent-ink); font: 600 0.72rem/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; padding: 0.42rem 0.62rem; border-radius: 4px; }
+  .frames2 { display: grid; gap: var(--gap); }
+  @media (min-width: 900px) { .frames2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  figure { margin: 0; display: grid; gap: 0.5rem; min-width: 0; }
+  figcaption { font: 500 0.72rem/1.4 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  button.frame { all: unset; cursor: zoom-in; display: block; border-radius: 6px; line-height: 0; }
+  button.frame img { display: block; width: 100%; height: auto; max-width: 100%; border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); }
+  button.frame:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .spec { display: grid; gap: clamp(1.5rem, 4vw, 2.5rem); }
+  @media (min-width: 900px) { .spec { grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); align-items: start; } }
+  .spec-body { display: grid; gap: 1.75rem; min-width: 0; }
+  .block { display: grid; gap: 0.7rem; }
+
+  .swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; }
+  .sw { display: grid; gap: 0.45rem; align-content: start; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 0.45rem; min-width: 0; }
+  .sw i { display: block; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  .sw b { display: block; font-weight: 600; font-size: 0.82rem; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
+  .sw code { font: 500 0.66rem/1.3 var(--font-mono); color: var(--muted); letter-spacing: 0.02em; }
+
+  .specimens { display: grid; gap: 0.5rem; }
+  .specimen { display: grid; gap: 0.2rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 0.8rem 1rem; min-width: 0; }
+  .specimen .s { font-size: 1.7rem; line-height: 1.15; overflow-wrap: anywhere; }
+
+  dl.rows { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--rule); }
+  dl.rows > div { display: grid; gap: 0.25rem; padding-block: 0.8rem; border-bottom: 1px solid var(--rule); }
+  @media (min-width: 700px) { dl.rows > div { grid-template-columns: 9.5rem minmax(0, 1fr); gap: 1rem; } }
+  dl.rows dt { font: 500 0.74rem/1.6 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  dl.rows dd { margin: 0; }
+
+  /* comparatif */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 40rem; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font: 500 0.72rem/1.3 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  tbody th { font-weight: 600; }
+  tr:last-child td, tr:last-child th { border-bottom: 0; }
+  .col-reco { background: var(--accent-soft); }
+  .lvl { display: inline-flex; gap: 3px; margin-right: 0.5rem; vertical-align: 1px; }
+  .lvl i { width: 9px; height: 9px; border-radius: 2px; background: var(--rule); }
+  .lvl i.on { background: var(--ink); }
+
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: clamp(1.25rem, 3vw, 2rem); display: grid; gap: 0.9rem; }
+
+  /* feuille de route */
+  ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--rule); }
+  ol.steps li { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 1rem; padding-block: 1.25rem; border-bottom: 1px solid var(--rule); }
+  .n { font: 800 2.1rem/1 var(--font-display); font-stretch: 75%; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .step { display: grid; gap: 0.4rem; min-width: 0; }
+  .who { font: 500 0.72rem/1.3 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .gate { font-size: 0.95rem; color: var(--muted); }
+  .gate b { color: var(--ink); font-weight: 600; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1.5rem; }
+  footer p { font: 500 0.74rem/1.6 var(--font-mono); letter-spacing: 0.06em; color: var(--muted); max-width: 60rem; }
+
+  /* agrandissement des planches */
+  #lightbox { position: fixed; inset: 0; background: var(--overlay); z-index: 50; overflow: auto; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+  #lightbox .inner { min-height: 100%; display: grid; place-items: center; padding: 3.5rem 1rem 1.5rem; }
+  #lightbox img { max-width: min(100%, 1920px); height: auto; border-radius: 4px; }
+  #lightbox .close { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 0.75rem); right: 1rem; font: 600 0.8rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; background: #fff; color: #111; border: 0; border-radius: 999px; padding: 0.7rem 1rem; cursor: pointer; }
+  #lightbox .close:focus-visible { outline: 3px solid #8FB0F0; outline-offset: 2px; }
+
+  /* spécimens des pistes */
+  .f-barlowc { font-family: "Barlow Condensed", var(--font-display); font-weight: 700; }
+  .f-barlow { font-family: "Barlow", var(--font-body); font-weight: 500; }
+  .f-plex { font-family: "IBM Plex Mono", var(--font-mono); font-weight: 500; letter-spacing: 0.08em; }
+  .f-shoulders { font-family: "Big Shoulders Display", var(--font-display); font-weight: 800; letter-spacing: 0.06em; }
+  .f-stencil { font-family: "Big Shoulders Stencil Display", var(--font-display); font-weight: 900; letter-spacing: 0.06em; }
+  .f-dmmono { font-family: "DM Mono", var(--font-mono); font-weight: 500; }
+  .f-marker { font-family: "Permanent Marker", cursive; }
+  .f-instrument { font-family: "Instrument Sans", var(--font-body); font-weight: 700; letter-spacing: -0.02em; }
+  .f-martian { font-family: "Martian Mono", var(--font-mono); font-weight: 500; letter-spacing: 0.08em; }
+  @media (prefers-reduced-motion: no-preference) { button.frame img { transition: box-shadow .15s ease; } button.frame:hover img { box-shadow: 0 0 0 2px var(--accent); } }
+</style>
+
+<main class="page">
+  <header class="head">
+    <p class="label">ROGER · Film 3 · Document de travail</p>
+    <h1>Feuille de route design</h1>
+    <p class="lead read">Trois pistes pour changer complètement de design, en restant dans l’univers professionnel du bâtiment. Chaque piste est montrée en images-clés, en 16:9 et en 9:16. Suivent un comparatif, une recommandation et les étapes jusqu’au film.</p>
+    <div class="chips">
+      <span class="chip">Propositions à valider par les associés</span>
+      <span class="chip warn">Ne pas diffuser avant le dépôt de la marque</span>
+      <span class="chip">Images-clés non contractuelles</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="depart">
+    <h2 id="depart">Le point de départ</h2>
+    <div class="two">
+      <div>
+        <h3>Pourquoi changer</h3>
+        <p>Les films 1 et 2 parlent le langage d’une application&nbsp;: couleurs vives, typographie ronde, icônes plates. Pour un cabinet de gestion locative, un langage de métier convient mieux. Il doit dire que l’intervention est préparée, mesurée et documentée.</p>
+        <p class="muted">Le bâtiment a ses propres codes visuels&nbsp;: plans, cotes, matières, outils, maquettes. Chaque piste en exploite un.</p>
+      </div>
+      <div>
+        <h3>Ce qui ne change pas</h3>
+        <ul class="plain">
+          <li>L’histoire de la Genèse&nbsp;: la panne, les allers-retours, comprendre avant de venir, l’intervention préparée, le compte rendu au gestionnaire.</li>
+          <li>Les garde-fous&nbsp;: aucun personnage «&nbsp;Roger&nbsp;», «&nbsp;un passage&nbsp;» présenté comme un objectif, aucun écran d’application montré comme réel, dépannage et remise en état séparés.</li>
+          <li>Rien sur l’abonnement, les interventions le soir, la nuit ou le week-end, l’IA, l’assurance ou les délais.</li>
+          <li>Deux formats natifs, 16:9 et 9:16, lisibles sans le son.</li>
+          <li>Un prototype interne tant que la marque n’est pas déposée.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ Piste 1 -->
+  <section aria-labelledby="p1">
+    <div class="piste-head">
+      <span class="label">Piste 1</span>
+      <h2 id="p1">Plan d’exécution</h2>
+      <span class="reco">Recommandée</span>
+    </div>
+    <div class="read" style="display:grid;gap:.8rem">
+      <p class="lead">Le film est un dossier technique qui se dessine. La panne devient une coupe, le diagnostic un détail agrandi, la préparation une nomenclature et la promesse un tirage bleu.</p>
+      <p>C’est la langue du dossier&nbsp;: plans, cotes, nomenclatures, cartouches. Un gestionnaire la reconnaît tout de suite, et elle dit «&nbsp;préparé, mesuré, tracé&nbsp;» sans rien promettre de plus.</p>
+    </div>
+    <div class="frames2">
+      <figure>
+        <button class="frame" type="button"><img src="images/p1-comprendre.jpg" width="1920" height="1080" alt="Piste 1, image-clé 16:9 : planche technique « Comprendre », coupe du meuble sous évier avec cotes, détail agrandi du joint et fiche de diagnostic."></button>
+        <figcaption>16:9 · Phase 02, Comprendre</figcaption>
+      </figure>
+      <figure>
+        <button class="frame" type="button"><img src="images/p1-promesse.jpg" width="1920" height="1080" alt="Piste 1, image-clé 16:9 : tirage bleu « Un passage. Un prix. Un rapport. », chaque phrase mesurée par une cote, avec une note sur l’objectif."></button>
+        <figcaption>16:9 · La promesse, en tirage bleu</figcaption>
+      </figure>
+    </div>
+    <div class="spec">
+      <div class="spec-body">
+        <div class="block">
+          <span class="label">Palette</span>
+          <div class="swatches">
+            <div class="sw"><i style="background:#F3F4F1"></i><div><b>Papier</b><code>#F3F4F1</code></div></div>
+            <div class="sw"><i style="background:#1C2127"></i><div><b>Graphite</b><code>#1C2127</code></div></div>
+            <div class="sw"><i style="background:#1F4FA6"></i><div><b>Bleu trait</b><code>#1F4FA6</code></div></div>
+            <div class="sw"><i style="background:#163A70"></i><div><b>Bleu tirage</b><code>#163A70</code></div></div>
+            <div class="sw"><i style="background:#F0641E"></i><div><b>Orange repérage</b><code>#F0641E</code></div></div>
+          </div>
+        </div>
+        <div class="block">
+          <span class="label">Typographies</span>
+          <div class="specimens">
+            <div class="specimen"><span class="s f-barlowc" style="font-size:2.2rem">Comprendre</span><span class="label">Barlow Condensed · titres</span></div>
+            <div class="specimen"><span class="s f-barlow">Un diagnostic avant de se déplacer.</span><span class="label">Barlow · phrases</span></div>
+            <div class="specimen"><span class="s f-plex" style="font-size:1.15rem">COUPE A-A · ÉCH. 1:10 · Ø40</span><span class="label">IBM Plex Mono · cotes et annotations</span></div>
+          </div>
+        </div>
+        <dl class="rows">
+          <div><dt>Grammaire</dt><dd>Traits fins et forts, cotes d’architecte, hachures de coupe, repères numérotés, nuage de révision, détail agrandi, nomenclature, cartouche. Le cadre porte des repères de grille comme une vraie planche.</dd></div>
+          <div><dt>Mouvement</dt><dd>Tout se trace&nbsp;: les traits se dessinent, les cotes s’étirent, les calques glissent. La caméra se déplace sur une grande feuille et plonge dans le «&nbsp;détail A&nbsp;». Des courbes nettes, sans rebond.</dd></div>
+          <div><dt>Son</dt><dd>Crayon et règle sur le papier, tampon, feuilles de calque. Une musique minimale sur une pulsation sourde.</dd></div>
+          <div><dt>Vigilance</dt><dd>La piste peut paraître froide&nbsp;: l’orange et le rythme la réchauffent. Les traits fins doivent être épaissis en 9:16. Chaque planche reste un «&nbsp;plan de principe&nbsp;», jamais un vrai relevé de logement.</dd></div>
+          <div><dt>Fabrication</dt><dd>La plus directe des trois&nbsp;: des tracés vectoriels, animés en code comme les films 1 et 2.</dd></div>
+        </dl>
+      </div>
+      <figure>
+        <button class="frame" type="button"><img src="images/p1-preparer-9x16.jpg" width="1080" height="1920" alt="Piste 1, image-clé 9:16 : vue éclatée du siphon neuf, nomenclature des pièces et prix annoncé avant l’intervention."></button>
+        <figcaption>9:16 · Phase 03, Préparer</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================ Piste 2 -->
+  <section aria-labelledby="p2">
+    <div class="piste-head">
+      <span class="label">Piste 2</span>
+      <h2 id="p2">Établi</h2>
+    </div>
+    <div class="read" style="display:grid;gap:.8rem">
+      <p class="lead">Vue de dessus d’un plan de travail. Au début, tout est en vrac&nbsp;: bons de passage, ticket du magasin, notes. Puis chaque chose trouve sa place, et les bonnes pièces sont alignées avant le départ.</p>
+      <p>Le geste du métier, concret et chaleureux. La préparation devient visible, avec ce qui vient du dossier d’un côté et ce qui vient du véhicule de l’autre.</p>
+    </div>
+    <figure>
+      <button class="frame" type="button"><img src="images/p2-preparer.jpg" width="1920" height="1080" alt="Piste 2, image-clé 16:9 : établi vu de dessus, bon d’intervention et outils rangés au cordeau, pièces du dossier dans un bac."></button>
+      <figcaption>16:9 · Préparer</figcaption>
+    </figure>
+    <div class="spec">
+      <div class="spec-body">
+        <div class="block">
+          <span class="label">Palette</span>
+          <div class="swatches">
+            <div class="sw"><i style="background:#D9C19B"></i><div><b>Contreplaqué</b><code>#D9C19B</code></div></div>
+            <div class="sw"><i style="background:#26409A"></i><div><b>Bleu de travail</b><code>#26409A</code></div></div>
+            <div class="sw"><i style="background:#AEB6BE"></i><div><b>Acier</b><code>#AEB6BE</code></div></div>
+            <div class="sw"><i style="background:#EE7B30"></i><div><b>Orange</b><code>#EE7B30</code></div></div>
+            <div class="sw"><i style="background:#F6F3EC"></i><div><b>Papier</b><code>#F6F3EC</code></div></div>
+          </div>
+        </div>
+        <div class="block">
+          <span class="label">Typographies</span>
+          <div class="specimens">
+            <div class="specimen"><span class="s f-shoulders" style="font-size:2.1rem">03 · PRÉPARER</span><span class="label">Big Shoulders Display · étiquettes embossées</span></div>
+            <div class="specimen"><span class="s f-stencil">À REPRENDRE</span><span class="label">Big Shoulders Stencil · tampons</span></div>
+            <div class="specimen"><span class="s f-dmmono" style="font-size:1.1rem">BON D’INTERVENTION · Appt 3B</span><span class="label">DM Mono · bons imprimés</span></div>
+            <div class="specimen"><span class="s f-marker">Le prix annoncé.</span><span class="label">Permanent Marker · notes au marqueur</span></div>
+          </div>
+        </div>
+        <dl class="rows">
+          <div><dt>Grammaire</dt><dd>Objets posés à plat avec des ombres douces, rangement au cordeau, étiquettes embossées, ruban de masquage, bons et tickets. Les pièces du dossier sont dans un bac, le stock du véhicule en dessous.</dd></div>
+          <div><dt>Mouvement</dt><dd>Les objets glissent et se calent sur une grille. Un léger «&nbsp;image par image&nbsp;» donne le côté fait main. La caméra reste en plongée, avec quelques poussées.</dd></div>
+          <div><dt>Son</dt><dd>Objets posés sur le bois, cliquetis de métal, ruban arraché, étiqueteuse, marqueur.</dd></div>
+          <div><dt>Vigilance</dt><dd>Si le rangement n’est pas strict, la piste fait «&nbsp;artisan&nbsp;» plus qu’organisé. Vus de dessus, les trajets sont moins lisibles, d’où les bons de passage.</dd></div>
+          <div><dt>Fabrication</dt><dd>Plus lourde&nbsp;: chaque objet est dessiné en détail, avec matière et ombre.</dd></div>
+        </dl>
+      </div>
+      <figure>
+        <button class="frame" type="button"><img src="images/p2-allers-9x16.jpg" width="1080" height="1920" alt="Piste 2, image-clé 9:16 : bons de passage, ticket de magasin et notes en vrac sous le titre « Ce qui coûte, c’est de revenir. »"></button>
+        <figcaption>9:16 · Les allers-retours</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================ Piste 3 -->
+  <section aria-labelledby="p3">
+    <div class="piste-head">
+      <span class="label">Piste 3</span>
+      <h2 id="p3">Maquette</h2>
+    </div>
+    <div class="read" style="display:grid;gap:.8rem">
+      <p class="lead">L’immeuble et le quartier en maquette d’architecte. On soulève les étages pour voir l’appartement, et les trajets s’empilent en arcs au-dessus du quartier.</p>
+      <p>Le logement est au centre, avec un ancrage parisien&nbsp;: toits en zinc, balcons, cheminées. C’est la plus forte en vertical, parce qu’un immeuble est vertical.</p>
+    </div>
+    <figure>
+      <button class="frame" type="button"><img src="images/p3-allers.jpg" width="1920" height="1080" alt="Piste 3, image-clé 16:9 : maquette du quartier, arcs des allers-retours empilés entre le logement et le magasin."></button>
+      <figcaption>16:9 · Les allers-retours</figcaption>
+    </figure>
+    <div class="spec">
+      <div class="spec-body">
+        <div class="block">
+          <span class="label">Palette</span>
+          <div class="swatches">
+            <div class="sw"><i style="background:#FBFBF9"></i><div><b>Carton plume</b><code>#FBFBF9</code></div></div>
+            <div class="sw"><i style="background:#D8D6CF"></i><div><b>Gris maquette</b><code>#D8D6CF</code></div></div>
+            <div class="sw"><i style="background:#8F9AA6"></i><div><b>Zinc</b><code>#8F9AA6</code></div></div>
+            <div class="sw"><i style="background:#FF6A2B"></i><div><b>Orange signal</b><code>#FF6A2B</code></div></div>
+            <div class="sw"><i style="background:#1E2329"></i><div><b>Encre</b><code>#1E2329</code></div></div>
+          </div>
+        </div>
+        <div class="block">
+          <span class="label">Typographies</span>
+          <div class="specimens">
+            <div class="specimen"><span class="s f-instrument" style="font-size:2.1rem">Une panne simple&#8239;?</span><span class="label">Instrument Sans · titres et phrases</span></div>
+            <div class="specimen"><span class="s f-martian" style="font-size:1.05rem">APPT 3B · 3<sup>E</sup> ÉTAGE</span><span class="label">Martian Mono · légendes</span></div>
+          </div>
+        </div>
+        <dl class="rows">
+          <div><dt>Grammaire</dt><dd>Axonométrie, volumes blancs, murs coupés en noir, étages éclatés, lignes de rappel, étiquettes. Une seule couleur vive pour le problème.</dd></div>
+          <div><dt>Mouvement</dt><dd>Les volumes s’élèvent, les étages se soulèvent, les arcs se tracent. La caméra glisse en continu et passe d’une échelle à l’autre&nbsp;: le quartier, l’immeuble, l’appartement, l’évier.</dd></div>
+          <div><dt>Son</dt><dd>Bois léger, petits mécanismes, clics de maquette. Une musique ample et minimale.</dd></div>
+          <div><dt>Vigilance</dt><dd>La fabrication la plus lourde, puisque la 3D est dessinée. L’image peut évoquer la promotion immobilière. Chaque plan de logement reste un plan «&nbsp;de principe&nbsp;».</dd></div>
+          <div><dt>Fabrication</dt><dd>Lourde&nbsp;: un moteur d’axonométrie en code, plus de volumes à dessiner et à ordonner.</dd></div>
+        </dl>
+      </div>
+      <figure>
+        <button class="frame" type="button"><img src="images/p3-panne-9x16.jpg" width="1080" height="1920" alt="Piste 3, image-clé 9:16 : immeuble parisien en axonométrie éclatée, étage coupé pour montrer l’appartement 3B et la fuite."></button>
+        <figcaption>9:16 · La panne</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================ Comparatif -->
+  <section aria-labelledby="comp">
+    <h2 id="comp">Comparatif</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Critère</th><th scope="col" class="col-reco">Plan d’exécution</th><th scope="col">Établi</th><th scope="col">Maquette</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Lien avec la promesse</th>
+            <td class="col-reco"><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span>Fort&nbsp;: préparer, mesurer, rendre compte</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>Moyen&nbsp;: surtout «&nbsp;Préparer&nbsp;»</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>Moyen&nbsp;: surtout la panne et les trajets</td></tr>
+          <tr><th scope="row">Lisible pour un gestionnaire</th>
+            <td class="col-reco"><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span>Fort</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>Moyen</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span>Fort</td></tr>
+          <tr><th scope="row">Chaleur, côté humain</th>
+            <td class="col-reco"><span class="lvl" aria-hidden="true"><i class="on"></i><i></i><i></i></span>Faible</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span>Fort</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>Moyen</td></tr>
+          <tr><th scope="row">Force en 9:16</th>
+            <td class="col-reco"><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>Moyen</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>Moyen</td>
+            <td><span class="lvl" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></span>Fort</td></tr>
+          <tr><th scope="row">Effort de fabrication</th>
+            <td class="col-reco">Moyen</td><td>Élevé</td><td>Élevé</td></tr>
+          <tr><th scope="row">Risque principal</th>
+            <td class="col-reco">Froideur</td><td>Côté «&nbsp;artisan&nbsp;»</td><td>Image «&nbsp;promoteur&nbsp;»</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ Recommandation -->
+  <section aria-labelledby="reco">
+    <h2 id="reco">Recommandation</h2>
+    <div class="panel read">
+      <span class="reco" style="justify-self:start">Piste 1 · Plan d’exécution</span>
+      <p class="lead">C’est la piste la plus proche de la promesse. Tout y est préparé, mesuré et tracé, et le rapport y trouve sa place naturelle dans le cartouche et le tirage final.</p>
+      <p>Elle se distingue nettement des films 1 et 2, se fabrique bien en code et tient dans les deux formats. Elle peut emprunter à la piste 3 une ouverture en axonométrie dessinée au trait, qui passe de l’immeuble à l’appartement puis à l’évier. On reste ainsi dans un seul langage, celui du plan.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ Feuille de route -->
+  <section aria-labelledby="route">
+    <h2 id="route">Les étapes</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="step"><h3>Choisir la piste</h3><span class="who">Vous et les associés</span><p>Retenir une piste et noter ce qu’il faut y changer&nbsp;: couleurs, typographies, ton.</p><p class="gate"><b>Validation&nbsp;:</b> la piste retenue et vos ajustements.</p></div></li>
+      <li><span class="n">2</span><div class="step"><h3>Planches définitives</h3><span class="who">Claude</span><p>Cinq images-clés par format, sur toute l’histoire&nbsp;: la panne, les allers-retours, le déclic, la méthode, la promesse.</p><p class="gate"><b>Validation&nbsp;:</b> l’allure de chaque moment du film.</p></div></li>
+      <li><span class="n">3</span><div class="step"><h3>Animatique</h3><span class="who">Claude</span><p>Le film de 30 s en version simplifiée, avec les cadrages, le rythme, les textes définitifs et un son témoin.</p><p class="gate"><b>Validation&nbsp;:</b> le rythme et les phrases, avant l’animation fine.</p></div></li>
+      <li><span class="n">4</span><div class="step"><h3>Animation et son</h3><span class="who">Claude</span><p>Les deux formats en version finale, avec des bruitages tirés de la matière de la piste.</p><p class="gate"><b>Validation&nbsp;:</b> le film en 16:9 et en 9:16.</p></div></li>
+      <li><span class="n">5</span><div class="step"><h3>Relecture et livraison</h3><span class="who">Vous et Claude</span><p>Relecture des garde-fous de la Genèse, puis livraison des deux MP4, des planches et des sources dans le dépôt.</p><p class="gate"><b>Statut&nbsp;:</b> prototype interne jusqu’au dépôt de la marque.</p></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="decisions">
+    <h2 id="decisions">Décisions à prendre</h2>
+    <ul class="plain read">
+      <li>Quelle piste retenir, et que faut-il y changer&#8239;?</li>
+      <li>Garde-t-on le logotype R⊙GER proposé dans les films 1 et 2, ou un nom écrit simplement en attendant la charte&#8239;?</li>
+      <li>Garde-t-on la fuite sous l’évier, fil rouge de la Genèse, ou prend-on un autre cas de dépannage&#8239;?</li>
+      <li>Garde-t-on 30 secondes comme le film 2, et faut-il aussi une version courte de 15 secondes&#8239;?</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Images-clés dessinées en code (SVG rendu dans Chromium), non contractuelles. Scénario de démonstration de la Genèse v2. Document interne&nbsp;: ne pas diffuser avant le dépôt de la marque.</p>
+  </footer>
+</main>
+
+<div id="lightbox" hidden>
+  <button class="close" type="button">Fermer</button>
+  <div class="inner"><img alt=""></div>
+</div>
+
+<script>
+(function () {
+  var box = document.getElementById('lightbox');
+  var img = box.querySelector('img');
+  var closeBtn = box.querySelector('.close');
+  var last = null;
+  function open(btn) {
+    var src = btn.querySelector('img');
+    img.src = src.src; img.alt = src.alt;
+    box.hidden = false; last = btn; closeBtn.focus();
+  }
+  function close() { box.hidden = true; img.removeAttribute('src'); if (last) last.focus(); }
+  document.querySelectorAll('button.frame').forEach(function (b) { b.addEventListener('click', function () { open(b); }); });
+  closeBtn.addEventListener('click', close);
+  box.addEventListener('click', function (e) { if (e.target === box || e.target.classList.contains('inner')) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+})();
+</script>

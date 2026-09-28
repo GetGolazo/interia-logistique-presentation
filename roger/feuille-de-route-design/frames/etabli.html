@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Piste 2 — Établi</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  html, body { margin: 0; background: #000; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="kit.js"></script>
+<script>
+(async function () {
+  'use strict';
+  const { el, ready, frame } = KIT;
+  const F = frame || 'preparer';
+  const V = F === 'allers';
+  const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+
+  // Piste 2 — « Établi » : vue de dessus d'un plan de travail, chaque chose à sa place.
+  const WOOD = '#D9C19B', BLUE = '#26409A', STEEL = '#AEB6BE', ORANGE = '#EE7B30', PAPER = '#F6F3EC', INK = '#1B1C1E', RUBBER = '#1C1D20';
+  const DISPLAY = 'Big Shoulders Display', STENCIL = 'Big Shoulders Stencil Display', MARKER = 'Permanent Marker', MONO = 'DM Mono';
+  await Promise.all(['800 60px "Big Shoulders Display"', '700 60px "Big Shoulders Display"', '900 60px "Big Shoulders Stencil Display"', '400 40px "Permanent Marker"', '400 16px "DM Mono"', '500 16px "DM Mono"'].map((f) => document.fonts.load(f)));
+
+  const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` }, document.getElementById('stage'));
+  const defs = el('defs', {}, svg);
+  let uid = 0;
+  const id = (p) => `${p}${++uid}`;
+
+  // ------------------------------------------------------------------ matières
+  function grad(stops, { x1 = 0, y1 = 0, x2 = 0, y2 = 1 } = {}) {
+    const g = el('linearGradient', { id: id('lg'), x1, y1, x2, y2 }, defs);
+    stops.forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, g));
+    return `url(#${g.id})`;
+  }
+  function rgrad(stops, { cx = 0.5, cy = 0.5, r = 0.5, fx, fy } = {}) {
+    const g = el('radialGradient', { id: id('rg'), cx, cy, r, fx, fy }, defs);
+    stops.forEach(([o, c, a]) => el('stop', { offset: o, 'stop-color': c, 'stop-opacity': a === undefined ? 1 : a }, g));
+    return `url(#${g.id})`;
+  }
+  // ombre portée douce, lumière en haut à gauche
+  const sh = el('filter', { id: 'shadow', x: '-30%', y: '-30%', width: '160%', height: '170%' }, defs);
+  el('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: 7, result: 'b' }, sh);
+  el('feOffset', { in: 'b', dx: 9, dy: 13, result: 'o' }, sh);
+  el('feFlood', { 'flood-color': '#4A3418', 'flood-opacity': 0.42, result: 'c' }, sh);
+  el('feComposite', { in: 'c', in2: 'o', operator: 'in', result: 's' }, sh);
+  const m = el('feMerge', {}, sh); el('feMergeNode', { in: 's' }, m); el('feMergeNode', { in: 'SourceGraphic' }, m);
+  const shSoft = el('filter', { id: 'shadowSoft', x: '-20%', y: '-20%', width: '140%', height: '150%' }, defs);
+  el('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: 3, result: 'b' }, shSoft);
+  el('feOffset', { in: 'b', dx: 3, dy: 5, result: 'o' }, shSoft);
+  el('feFlood', { 'flood-color': '#4A3418', 'flood-opacity': 0.35, result: 'c' }, shSoft);
+  el('feComposite', { in: 'c', in2: 'o', operator: 'in', result: 's' }, shSoft);
+  const m2 = el('feMerge', {}, shSoft); el('feMergeNode', { in: 's' }, m2); el('feMergeNode', { in: 'SourceGraphic' }, m2);
+
+  function bench() {
+    el('rect', { width: W, height: H, fill: WOOD }, svg);
+    // veinage du contreplaqué (bruit étiré à l'horizontale)
+    const f1 = el('filter', { id: 'grain1', x: 0, y: 0, width: '100%', height: '100%' }, defs);
+    el('feTurbulence', { type: 'fractalNoise', baseFrequency: V ? '0.07 0.0035' : '0.0032 0.075', numOctaves: 4, seed: 11 }, f1);
+    el('feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.45  0 0 0 0 0.31  0 0 0 0 0.16  1.6 0 0 0 -0.62' }, f1);
+    el('rect', { width: W, height: H, fill: '#fff', filter: 'url(#grain1)', opacity: 0.55 }, svg);
+    const f2 = el('filter', { id: 'grain2', x: 0, y: 0, width: '100%', height: '100%' }, defs);
+    el('feTurbulence', { type: 'fractalNoise', baseFrequency: V ? '0.5 0.02' : '0.02 0.5', numOctaves: 2, seed: 4 }, f2);
+    el('feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.5  0 0 0 0 0.36  0 0 0 0 0.2  1.2 0 0 0 -0.55' }, f2);
+    el('rect', { width: W, height: H, fill: '#fff', filter: 'url(#grain2)', opacity: 0.35 }, svg);
+    // lumière : plus claire en haut à gauche, bords assombris
+    el('rect', { width: W, height: H, fill: rgrad([[0, '#FFF6E6', 0.28], [0.55, '#FFF6E6', 0], [1, '#3B2A14', 0.32]], { cx: 0.36, cy: 0.3, r: 0.85 }) }, svg);
+  }
+
+  // ------------------------------------------------------------------ étiquettes
+  function textW(str, font) {
+    const c = textW.c || (textW.c = document.createElement('canvas').getContext('2d'));
+    c.font = font; return c.measureText(str).width;
+  }
+  // ruban Dymo : lettres blanches embossées sur ruban bleu
+  function dymo(p, x, y, str, size, rot = 0, o = {}) {
+    const ls = size * 0.1, font = `800 ${size}px "${DISPLAY}"`;
+    const tw = textW(str, font) + ls * (str.length - 1);
+    const pad = size * 0.55, h = size * 1.5, w = tw + pad * 2;
+    const g = el('g', { transform: `translate(${x} ${y}) rotate(${rot})`, filter: 'url(#shadowSoft)' }, p);
+    el('rect', { x: 0, y: 0, width: w, height: h, rx: 3, fill: grad([[0, '#3453B4'], [0.5, o.color || BLUE], [1, '#1B2F75']]) }, g);
+    el('rect', { x: 2, y: 2, width: w - 4, height: h * 0.18, rx: 2, fill: '#fff', opacity: 0.1 }, g);
+    const base = h / 2 + size * 0.36;
+    let cx = pad;
+    [...str].forEach((ch, i) => {
+      const cw = textW(ch, font);
+      const jy = ((i * 37) % 5 - 2) * 0.35;
+      el('text', { x: cx + 1.2, y: base + jy + 1.4, 'font-family': DISPLAY, 'font-weight': 800, 'font-size': size, fill: '#0B1640', opacity: 0.55, text: ch }, g);
+      el('text', { x: cx, y: base + jy, 'font-family': DISPLAY, 'font-weight': 800, 'font-size': size, fill: '#EEF2F8', text: ch }, g);
+      cx += cw + ls;
+    });
+    return { g, w, h };
+  }
+  // ruban de masquage + écriture au marqueur
+  function tape(p, x, y, str, size, rot = 0, o = {}) {
+    const font = `400 ${size}px "${MARKER}"`;
+    const tw = textW(str, font);
+    const w = (o.w || tw + size * 1.3), h = size * 1.55;
+    const g = el('g', { transform: `translate(${x} ${y}) rotate(${rot})`, filter: 'url(#shadowSoft)' }, p);
+    const pts = [];
+    for (let k = 0; k <= 8; k++) pts.push([w + (k % 2 ? 5 : 0), (h * k) / 8]);
+    for (let k = 8; k >= 0; k--) pts.push([k % 2 ? -5 : 0, (h * k) / 8]);
+    el('polygon', { points: pts.map((q) => q.join(',')).join(' '), fill: o.fill || '#EFE3C2', opacity: 0.94 }, g);
+    el('rect', { x: 0, y: 0, width: w, height: h, fill: 'url(#crepe)', opacity: 0.5 }, g);
+    el('text', { x: (w - tw) / 2, y: h / 2 + size * 0.36, 'font-family': MARKER, 'font-size': size, fill: o.ink || INK, opacity: 0.9, text: str }, g);
+    return { g, w, h };
+  }
+  const cp = el('pattern', { id: 'crepe', width: 6, height: 3, patternUnits: 'userSpaceOnUse' }, defs);
+  el('line', { x1: 0, y1: 1.5, x2: 6, y2: 1.5, stroke: '#B9A67A', 'stroke-width': 0.6, opacity: 0.5 }, cp);
+
+  // ------------------------------------------------------------------ objets (vus de dessus, posés à plat)
+  const place = (p, x, y, rot = 0, s = 1) => el('g', { transform: `translate(${x} ${y}) rotate(${rot}) scale(${s})`, filter: 'url(#shadow)' }, p);
+  const cylH = grad([[0, '#A9B0B8'], [0.22, '#E6E9EC'], [0.42, '#F8F9FA'], [0.75, '#D2D6DB'], [1, '#9EA6AE']]);
+  const cylV = grad([[0, '#A9B0B8'], [0.22, '#E6E9EC'], [0.42, '#F8F9FA'], [0.75, '#D2D6DB'], [1, '#9EA6AE']], { x2: 1, y2: 0 });
+  const steelH = grad([[0, '#8E979F'], [0.3, '#E3E7EA'], [0.55, '#C7CDD2'], [1, '#848D96']]);
+
+  function siphon(p, x, y, rot = 0) {
+    const g = place(p, x, y, rot);
+    el('rect', { x: -122, y: 33, width: 124, height: 44, fill: cylH, stroke: '#8E969E', 'stroke-width': 1 }, g);           // tube
+    el('rect', { x: -16, y: 20, width: 30, height: 70, rx: 3, fill: grad([[0, '#9FA7AF'], [0.35, '#DDE1E5'], [0.6, '#BCC3C9'], [1, '#8C949C']]), stroke: '#7F878F', 'stroke-width': 1 }, g); // écrou
+    el('rect', { x: 14, y: 0, width: 160, height: 110, rx: 22, fill: cylH, stroke: '#8E969E', 'stroke-width': 1 }, g);       // corps
+    el('rect', { x: 104, y: 108, width: 46, height: 58, fill: cylV, stroke: '#8E969E', 'stroke-width': 1 }, g);              // sortie
+    el('rect', { x: 96, y: 150, width: 62, height: 28, rx: 3, fill: grad([[0, '#9FA7AF'], [0.35, '#DDE1E5'], [0.6, '#BCC3C9'], [1, '#8C949C']], { x2: 1, y2: 0 }), stroke: '#7F878F', 'stroke-width': 1 }, g);
+    el('rect', { x: 168, y: -8, width: 30, height: 126, rx: 6, fill: grad([[0, '#9FA7AF'], [0.35, '#DDE1E5'], [0.6, '#BCC3C9'], [1, '#8C949C']]), stroke: '#7F878F', 'stroke-width': 1 }, g); // culot
+    for (let i = 0; i < 8; i++) el('line', { x1: 172 + i * 3.4, y1: -4, x2: 172 + i * 3.4, y2: 114, stroke: '#7F878F', 'stroke-width': 0.8, opacity: 0.6 }, g);
+    return g;
+  }
+  function ring(p, x, y, R, r, fill, o = {}) {
+    const g = place(p, x, y);
+    el('path', { d: `M${-R},0 a${R},${R} 0 1,0 ${2 * R},0 a${R},${R} 0 1,0 ${-2 * R},0 Z M${-r},0 a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0 Z`, fill, 'fill-rule': 'evenodd' }, g);
+    if (o.bevel) el('circle', { r: (R + r) / 2, fill: 'none', stroke: o.bevel, 'stroke-width': (R - r) * 0.35, opacity: 0.55 }, g);
+    el('path', { d: `M${-R * 0.72},${-R * 0.62} A${R * 0.95},${R * 0.95} 0 0,1 ${R * 0.35},${-R * 0.9}`, fill: 'none', stroke: '#fff', 'stroke-width': 2.4, opacity: o.hl || 0.22, 'stroke-linecap': 'round' }, g);
+    return g;
+  }
+  function ptfe(p, x, y) {
+    const g = ring(p, x, y, 46, 27, rgrad([[0.55, '#FFFFFF'], [0.8, '#F1F2F2'], [1, '#D9DCDE']]), { hl: 0.6 });
+    el('path', { d: 'M-27,0 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0 Z M-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0 Z', fill: '#9DB7D4', 'fill-rule': 'evenodd' }, g);
+    el('path', { d: 'M40,22 C58,34 70,44 92,48 L94,40 C74,36 60,26 44,14 Z', fill: '#FBFBFB', opacity: 0.9 }, g);
+    return g;
+  }
+  function wrench(p, x, y, rot = 0) {
+    const g = place(p, x, y, rot);
+    el('path', { d: 'M112,-16 L376,-12 Q396,-11 396,0 Q396,11 376,12 L112,16 Z', fill: steelH, stroke: '#7B848D', 'stroke-width': 1 }, g);
+    el('circle', { cx: 374, cy: 0, r: 6.5, fill: WOOD, stroke: '#6E777F', 'stroke-width': 1 }, g);
+    el('path', { d: 'M132,-18 C122,-46 94,-60 58,-60 L12,-60 Q0,-60 0,-48 L0,-24 L54,-24 L64,-14 L64,24 C64,42 80,54 100,52 C118,50 128,36 132,16 Z', fill: steelH, stroke: '#7B848D', 'stroke-width': 1 }, g);
+    el('path', { d: 'M6,10 L58,10 L58,36 L18,36 Q6,36 6,24 Z', fill: steelH, stroke: '#7B848D', 'stroke-width': 1 }, g);
+    el('rect', { x: 70, y: 16, width: 30, height: 20, rx: 4, fill: '#737C85' }, g);
+    for (let i = 0; i < 7; i++) el('line', { x1: 73 + i * 4, y1: 17, x2: 73 + i * 4, y2: 35, stroke: '#C9CFD4', 'stroke-width': 1 }, g);
+    el('path', { d: 'M150,-6 L360,-4', stroke: '#fff', 'stroke-width': 2, opacity: 0.35, 'stroke-linecap': 'round' }, g);
+    return g;
+  }
+  function pliers(p, x, y, rot = 0) {
+    const g = place(p, x, y, rot);
+    const gripU = grad([[0, '#35529F'], [0.45, '#4C6CC4'], [1, '#1E3375']]);
+    for (const sg of [-1, 1]) {
+      el('path', { d: `M140,${sg * 2} L236,${sg * 14}`, stroke: '#9AA3AB', 'stroke-width': 17, 'stroke-linecap': 'round' }, g);
+      el('path', { d: `M232,${sg * 14} L446,${sg * 40}`, stroke: gripU, 'stroke-width': 30, 'stroke-linecap': 'round' }, g);
+      el('path', { d: `M244,${sg * 11} L440,${sg * 34}`, stroke: '#fff', 'stroke-width': 3, opacity: 0.25, 'stroke-linecap': 'round' }, g);
+    }
+    el('path', { d: 'M150,-8 L70,-50 L26,-40 L40,-26 L72,-30 L140,8 Z', fill: steelH, stroke: '#6F7880', 'stroke-width': 1 }, g);
+    el('path', { d: 'M150,8 L80,44 L40,36 L52,24 L82,26 L140,-8 Z', fill: steelH, stroke: '#6F7880', 'stroke-width': 1 }, g);
+    for (let i = 0; i < 5; i++) el('line', { x1: 44 + i * 6, y1: -30 - i * 0.8, x2: 48 + i * 6, y2: -36, stroke: '#5F6870', 'stroke-width': 1.2 }, g);
+    el('circle', { cx: 142, cy: 0, r: 17, fill: grad([[0, '#E2E6EA'], [1, '#8C959D']]), stroke: '#6F7880', 'stroke-width': 1 }, g);
+    el('circle', { cx: 142, cy: 0, r: 6, fill: '#6F7880' }, g);
+    return g;
+  }
+  function tapeMeasure(p, x, y, rot = 0) {
+    const g = place(p, x, y, rot);
+    // lame sortie (graduée en mm, chiffres en cm)
+    const bl = el('g', {}, g);
+    el('rect', { x: -176, y: 112, width: 190, height: 26, fill: '#F2E3A0', stroke: '#C9B56A', 'stroke-width': 1 }, bl);
+    for (let i = 0; i <= 38; i++) {
+      const xx = -170 + i * 4.8;
+      const long = i % 10 === 0, mid = i % 5 === 0;
+      el('line', { x1: xx, y1: 112, x2: xx, y2: 112 + (long ? 14 : mid ? 9 : 5), stroke: '#2A2A2A', 'stroke-width': long ? 1.4 : 0.9 }, bl);
+      if (long) el('text', { x: xx + 2, y: 135, 'font-family': MONO, 'font-size': 10, 'font-weight': 500, fill: '#B32222', text: String(12 + i / 10) }, bl);
+    }
+    el('rect', { x: -184, y: 106, width: 10, height: 38, rx: 2, fill: grad([[0, '#C99A3A'], [1, '#8A6620']]) }, bl);
+    el('rect', { x: 0, y: 0, width: 156, height: 156, rx: 36, fill: grad([[0, '#F6A25E'], [0.55, ORANGE], [1, '#C85A1B']], { x2: 1, y2: 1 }) }, g);
+    el('path', { d: 'M0,40 Q0,0 36,0 L52,0 L52,156 L36,156 Q0,156 0,120 Z', fill: '#232427', opacity: 0.92 }, g);
+    el('circle', { cx: 100, cy: 72, r: 30, fill: grad([[0, '#F4F6F8'], [0.5, '#B6BDC4'], [1, '#EEF1F3']], { x2: 1, y2: 1 }), stroke: '#8F979F', 'stroke-width': 1.2 }, g);
+    el('circle', { cx: 100, cy: 72, r: 12, fill: 'none', stroke: '#8F979F', 'stroke-width': 1.2 }, g);
+    el('rect', { x: 128, y: 100, width: 22, height: 44, rx: 5, fill: '#2E2F33' }, g);
+    return g;
+  }
+  function pencil(p, x, y, rot = 0) {
+    const g = place(p, x, y, rot);
+    el('rect', { x: 0, y: -12, width: 250, height: 24, rx: 3, fill: grad([[0, '#F07E52'], [0.5, '#D65A2E'], [1, '#A8401D']]) }, g);
+    el('path', { d: 'M250,-12 L292,-5 L292,5 L250,12 Z', fill: '#E7CC9C' }, g);
+    el('path', { d: 'M284,-6 L302,-3 L302,3 L284,6 Z', fill: '#3A3B3F' }, g);
+    el('text', { x: 24, y: 5, 'font-family': MONO, 'font-size': 11, 'font-weight': 500, fill: '#FBE7DC', 'letter-spacing': 2, text: 'CHARPENTIER  HB' }, g);
+    return g;
+  }
+  function cloth(p, x, y, rot = 0) {
+    const g = place(p, x, y, rot);
+    el('rect', { x: 0, y: 0, width: 190, height: 160, rx: 10, fill: grad([[0, '#5373BD'], [1, '#34529C']], { x2: 1, y2: 1 }) }, g);
+    el('path', { d: 'M0,62 L190,56 L190,160 L0,160 Z', fill: '#2E4A90', opacity: 0.55 }, g);
+    el('path', { d: 'M0,62 L190,56', stroke: '#6F8DD0', 'stroke-width': 2, opacity: 0.6 }, g);
+    el('rect', { x: 0, y: 0, width: 190, height: 160, rx: 10, fill: 'url(#micro)', opacity: 0.35 }, g);
+    return g;
+  }
+  const mp = el('pattern', { id: 'micro', width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(35)' }, defs);
+  el('line', { x1: 0, y1: 0, x2: 0, y2: 5, stroke: '#fff', 'stroke-width': 0.7, opacity: 0.35 }, mp);
+
+  // bac à pièces en plastique gris
+  function tray(p, x, y, w, h) {
+    const g = el('g', { transform: `translate(${x} ${y})`, filter: 'url(#shadow)' }, p);
+    el('rect', { x: 0, y: 0, width: w, height: h, rx: 22, fill: grad([[0, '#DDE0E3'], [1, '#C4C9CE']]), stroke: '#AEB4BA', 'stroke-width': 1.2 }, g);
+    el('rect', { x: 16, y: 16, width: w - 32, height: h - 32, rx: 12, fill: grad([[0, '#B9BFC5'], [0.18, '#CDD2D6'], [1, '#D4D8DC']]) }, g);
+    el('rect', { x: 16, y: 16, width: w - 32, height: h - 32, rx: 12, fill: 'none', stroke: '#A9AFB6', 'stroke-width': 1 }, g);
+    return g;
+  }
+  // étiquette kraft attachée aux pièces du dossier
+  function kraftTag(p, x, y, rot, lines) {
+    const g = el('g', { transform: `translate(${x} ${y}) rotate(${rot})`, filter: 'url(#shadowSoft)' }, p);
+    el('path', { d: 'M22,0 L190,0 L190,112 L22,112 L0,90 L0,22 Z', fill: grad([[0, '#D2A56C'], [1, '#BF9055']]) }, g);
+    el('circle', { cx: 22, cy: 56, r: 12, fill: '#E9D3AE' }, g);
+    el('circle', { cx: 22, cy: 56, r: 6, fill: '#CDB38A' }, g);
+    el('path', { d: 'M22,56 C-10,40 -30,90 -60,70', fill: 'none', stroke: '#F3EEE2', 'stroke-width': 2.2 }, g);
+    el('text', { x: 46, y: 44, 'font-family': MARKER, 'font-size': 28, fill: INK, text: lines[0] }, g);
+    lines.slice(1).forEach((t, i) => el('text', { x: 46, y: 72 + i * 22, 'font-family': MONO, 'font-size': 13.5, 'font-weight': 500, fill: '#3A2E1E', text: t }, g));
+    return g;
+  }
+
+  // feuille de papier (bon, ticket), posée avec une ombre
+  function sheet(p, x, y, w, h, rot = 0, o = {}) {
+    const g = el('g', { transform: `translate(${x} ${y}) rotate(${rot})`, filter: 'url(#shadow)' }, p);
+    el('rect', { x: 0, y: 0, width: w, height: h, fill: o.fill || grad([[0, '#FBF9F4'], [1, '#EFEAE0']], { x2: 0.3, y2: 1 }), rx: o.rx || 1 }, g);
+    return g;
+  }
+  const T = (p, x, y, s, o = {}) => el('text', { x, y, 'font-family': o.ff || MONO, 'font-size': o.size || 16, 'font-weight': o.w || 400, fill: o.fill || INK, 'letter-spacing': o.ls || 0, 'text-anchor': o.anchor, opacity: o.op, text: s }, p);
+  function clip(p, x, y, rot = 0) {
+    const g = el('g', { transform: `translate(${x} ${y}) rotate(${rot})`, filter: 'url(#shadowSoft)' }, p);
+    el('path', { d: 'M-50,0 L50,0 L44,34 L-44,34 Z', fill: grad([[0, '#3C3E43'], [1, '#141518']]) }, g);
+    el('path', { d: 'M-30,2 C-40,-40 -20,-60 0,-62 C20,-60 40,-40 30,2', fill: 'none', stroke: '#C5CBD1', 'stroke-width': 5 }, g);
+    return g;
+  }
+  function stamp(p, x, y, str, rot, col) {
+    const g = el('g', { transform: `translate(${x} ${y}) rotate(${rot})`, opacity: 0.85 }, p);
+    const w = textW(str, `900 30px "${STENCIL}"`) + 40;
+    el('rect', { x: -w / 2, y: -26, width: w, height: 52, rx: 5, fill: 'none', stroke: col, 'stroke-width': 3.5 }, g);
+    el('text', { x: 0, y: 11, 'text-anchor': 'middle', 'font-family': STENCIL, 'font-weight': 900, 'font-size': 30, 'letter-spacing': 2, fill: col, text: str }, g);
+    return g;
+  }
+  function check(p, x, y, col = BLUE) {
+    el('path', { d: `M${x},${y} l7,8 l15,-18`, fill: 'none', stroke: col, 'stroke-width': 3.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, p);
+  }
+
+  // ================================================================== 03 — PRÉPARER (16:9)
+  function preparer() {
+    bench();
+    // colonne de gauche : titre, notes, bon d'intervention
+    dymo(svg, 104, 104, '03 · PRÉPARER', 62, -1.2);
+    tape(svg, 112, 236, 'Les bonnes pièces.', 44, 1.4);
+    tape(svg, 132, 318, 'Le prix annoncé.', 44, -1.1);
+    const bon = sheet(svg, 108, 432, 540, 566, -2.2);
+    T(bon, 34, 58, 'BON D’INTERVENTION', { size: 22, w: 500, ls: 2.5 });
+    T(bon, 34, 84, 'ROGER · Roger Dépanne', { size: 15, fill: '#5A5C60' });
+    el('line', { x1: 34, y1: 104, x2: 506, y2: 104, stroke: INK, 'stroke-width': 1.5 }, bon);
+    [['Dossier', 'Appt 3B — fuite sous évier'], ['Signalé', 'locataire · 2 photos'], ['Diagnostic', 'joint usé, siphon fissuré']].forEach(([k, v], i) => {
+      T(bon, 34, 142 + i * 36, k.toUpperCase(), { size: 12.5, fill: '#6B6D71', ls: 1.5 });
+      T(bon, 176, 142 + i * 36, v, { size: 16.5, w: 500 });
+    });
+    el('line', { x1: 34, y1: 250, x2: 506, y2: 250, stroke: INK, 'stroke-width': 0.8, opacity: 0.4 }, bon);
+    T(bon, 34, 284, 'À EMPORTER', { size: 12.5, fill: '#6B6D71', ls: 1.5 });
+    ['Siphon PVC Ø40', 'Joints conique + plat', 'Pièces courantes (véhicule)'].forEach((v, i) => {
+      el('rect', { x: 36, y: 302 + i * 38, width: 20, height: 20, fill: 'none', stroke: INK, 'stroke-width': 1.4 }, bon);
+      check(bon, 38, 312 + i * 38);
+      T(bon, 72, 318 + i * 38, v, { size: 16.5, w: 500 });
+    });
+    el('line', { x1: 34, y1: 430, x2: 506, y2: 430, stroke: INK, 'stroke-width': 0.8, opacity: 0.4 }, bon);
+    T(bon, 34, 464, 'PRIX', { size: 12.5, fill: '#6B6D71', ls: 1.5 });
+    T(bon, 34, 492, 'Annoncé au gestionnaire,', { size: 16.5, w: 500 });
+    T(bon, 34, 516, 'avant l’intervention.', { size: 16.5, w: 500 });
+    stamp(bon, 400, 496, 'ANNONCÉ', -9, BLUE);
+    T(bon, 34, 552, 'Scénario de démonstration', { size: 11.5, fill: '#8A8C90', ls: 1 });
+    clip(svg, 548, 424, -2.2);
+
+    // zone de droite : le « knolling », tout aligné
+    // rangée du haut : les pièces identifiées au dossier, dans un bac
+    tray(svg, 790, 118, 1040, 290);
+    siphon(svg, 992, 176);
+    ring(svg, 1296, 262, 42, 25, rgrad([[0.55, '#46484D'], [0.8, '#26272A'], [1, '#141517']]), { bevel: '#5A5C62' });
+    ring(svg, 1446, 262, 44, 30, rgrad([[0.6, '#3A3B3F'], [1, '#161719']]));
+    kraftTag(svg, 1560, 206, 3, ['APPT 3B', 'fuite sous évier', 'réf. siphon Ø40']);
+    dymo(svg, 812, 356, 'IDENTIFIÉ AU DOSSIER', 22, 0);
+    // en dessous : le stock du véhicule, aligné au cordeau
+    dymo(svg, 790, 446, 'STOCK VÉHICULE', 24, 0);
+    wrench(svg, 790, 596);
+    pliers(svg, 1199, 596);
+    ptfe(svg, 1736, 596);
+    tapeMeasure(svg, 974, 724);
+    pencil(svg, 1234, 802);
+    cloth(svg, 1640, 722);
+    tape(svg, 1452, 976, 'Prototype interne — ne pas diffuser', 22, -1.2, { fill: '#F1E7CB' });
+  }
+
+  // ================================================================== 02 — LES ALLERS-RETOURS (9:16)
+  function allers() {
+    bench();
+    dymo(svg, 92, 118, '02 · ALLERS-RETOURS', 46, -1.5);
+    // tas de papiers : trois bons de passage, un ticket, des notes
+    const passages = [
+      [104, 486, -6, 'PASSAGE 1', 'Constat', 'MAR. 08:15'],
+      [296, 632, 4, 'PASSAGE 2', 'Il manquait une pièce', 'MER. 14:30'],
+      [118, 884, -3, 'PASSAGE 3', 'Pas la bonne référence', 'VEN. 10:00'],
+    ];
+    passages.forEach(([x, y, r, k, v, d], i) => {
+      const s = sheet(svg, x, y, 470, 250, r);
+      T(s, 30, 52, 'BON DE PASSAGE', { size: 15, fill: '#6B6D71', ls: 2 });
+      T(s, 440, 52, d, { size: 15, fill: '#6B6D71', anchor: 'end' });
+      el('line', { x1: 30, y1: 70, x2: 440, y2: 70, stroke: INK, 'stroke-width': 1.2 }, s);
+      T(s, 30, 124, k, { ff: DISPLAY, w: 800, size: 46, ls: 1 });
+      T(s, 30, 170, v, { size: 22, w: 500 });
+      T(s, 30, 222, 'Appt 3B · fuite sous évier', { size: 14, fill: '#8A8C90' });
+      if (i === 2) stamp(s, 330, 200, 'À REPRENDRE', -10, '#D0461E');
+    });
+    // ticket du magasin
+    const tk = sheet(svg, 800, 470, 236, 420, 8, { fill: '#FFFFFF' });
+    T(tk, 118, 50, 'MAGASIN', { size: 18, w: 500, anchor: 'middle', ls: 3 });
+    T(tk, 118, 74, 'Plomberie · sanitaire', { size: 12, anchor: 'middle', fill: '#6B6D71' });
+    el('line', { x1: 20, y1: 94, x2: 230, y2: 94, stroke: INK, 'stroke-width': 1, 'stroke-dasharray': '4 3' }, tk);
+    ['SIPHON Ø32', 'JOINT Ø32', '', 'RÉF. À VÉRIFIER', '', 'RETOUR  1 ART.'].forEach((v, i) => T(tk, 22, 130 + i * 30, v, { size: 14, w: 500 }));
+    el('line', { x1: 20, y1: 324, x2: 230, y2: 324, stroke: INK, 'stroke-width': 1, 'stroke-dasharray': '4 3' }, tk);
+    for (let i = 0; i < 26; i++) el('rect', { x: 30 + i * 7.4, y: 344, width: (i * 7) % 3 + 1.2, height: 44, fill: INK }, tk);
+    // clé de la camionnette
+    const key = el('g', { transform: 'translate(738 1016) rotate(-24)', filter: 'url(#shadow)' }, svg);
+    el('rect', { x: 0, y: -30, width: 96, height: 60, rx: 22, fill: grad([[0, '#2F3034'], [1, '#121315']]) }, key);
+    el('circle', { cx: 30, cy: 0, r: 9, fill: '#3F4146' }, key);
+    el('path', { d: 'M96,-9 L196,-9 L204,-4 L196,0 L204,4 L196,9 L96,9 Z', fill: steelH }, key);
+    el('circle', { cx: -14, cy: 0, r: 18, fill: 'none', stroke: '#B8BFC6', 'stroke-width': 4 }, key);
+    // mauvais siphon (Ø32), barré
+    siphon(svg, 250, 1206, -8);
+    el('path', { d: 'M150,1206 L480,1386 M470,1196 L170,1406', stroke: '#D0461E', 'stroke-width': 9, 'stroke-linecap': 'round', opacity: 0.85 }, svg);
+    tape(svg, 470, 1408, 'Ø32 ≠ Ø40', 34, 6, { fill: '#F1E4C3' });
+    // notes du gestionnaire, du locataire…
+    const notes = [[680, 1110, 4, ['Ça goutte', 'toujours.']], [90, 1462, -5, ['Vous repassez', 'quand ?']], [600, 1476, 3, ['Relance :', 'un créneau ?']], [350, 1630, -2, ['Quel devis ?']]];
+    notes.forEach(([x, y, r, ls], i) => {
+      const n = sheet(svg, x, y, 300, 200, r, { fill: i === 3 ? grad([[0, '#F7B98B'], [1, '#F2A26A']]) : grad([[0, '#FFF7D6'], [1, '#F6E7AE']]) });
+      ls.forEach((t, k) => T(n, 26, 76 + k * 54, t, { ff: MARKER, size: 36 }));
+    });
+    // compte des passages au crayon sur le bois
+    const tally = el('g', { opacity: 0.8 }, svg);
+    T(tally, 690, 1760, 'passages', { ff: MARKER, size: 34, fill: '#3B2E1E' });
+    [0, 1, 2].forEach((i) => el('path', { d: `M${900 + i * 22},1718 l-3,58`, stroke: '#3B2E1E', 'stroke-width': 5, 'stroke-linecap': 'round' }, tally));
+    // le titre, au marqueur sur du ruban de masquage
+    tape(svg, 90, 236, 'Ce qui coûte,', 78, -1.2);
+    tape(svg, 130, 344, 'c’est de revenir.', 78, 1.2, { ink: '#C43E14' });
+    tape(svg, 96, 1800, 'Prototype interne — ne pas diffuser', 22, -1.5, { fill: '#F1E7CB' });
+  }
+
+  ({ preparer, allers })[F]();
+  ready();
+})();
+</script>
+</body>
+</html>
